@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#232f3e" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<link rel="icon" href="icon-192.png" />
+<title>AIF-C01 刷题</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app-root">
+    <header id="top-bar">
+      <button id="btn-back" class="icon-btn" aria-label="返回" hidden>&#8592;</button>
+      <div id="top-title">AIF-C01 刷题</div>
+      <button id="btn-font-size" class="icon-btn" aria-label="字体大小">Aa</button>
+    </header>
+
+    <main id="app"></main>
+
+    <nav id="bottom-nav">
+      <button class="nav-btn" data-view="home">
+        <span class="nav-icon">&#8962;</span><span>首页</span>
+      </button>
+      <button class="nav-btn" data-view="study">
+        <span class="nav-icon">&#128218;</span><span>背题模式</span>
+      </button>
+      <button class="nav-btn" data-view="quiz">
+        <span class="nav-icon">&#9998;</span><span>测试模式</span>
+      </button>
+      <button class="nav-btn" data-view="wrongbook">
+        <span class="nav-icon">&#9888;</span><span>错题本</span>
+      </button>
+    </nav>
+  </div>
+
+  <div id="overlay-root"></div>
+
+  <script src="questions-data.js"></script>
+  <script src="app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("sw.js").then(function (reg) {
+          function handleNewWorker(worker) {
+            worker.addEventListener("statechange", function () {
+              if (worker.state === "installed" && navigator.serviceWorker.controller) {
+                if (window.__showUpdateBanner) window.__showUpdateBanner(reg);
+              }
+            });
+          }
+          if (reg.waiting && navigator.serviceWorker.controller) {
+            if (window.__showUpdateBanner) window.__showUpdateBanner(reg);
+          }
+          if (reg.installing) handleNewWorker(reg.installing);
+          reg.addEventListener("updatefound", function () {
+            if (reg.installing) handleNewWorker(reg.installing);
+          });
+          var reloaded = false;
+          navigator.serviceWorker.addEventListener("controllerchange", function () {
+            if (reloaded) return;
+            reloaded = true;
+            window.location.reload();
+          });
+          setInterval(function () { reg.update().catch(function () {}); }, 60 * 1000);
+        }).catch(function () {});
+      });
+    }
+  </script>
+</body>
+</html>
