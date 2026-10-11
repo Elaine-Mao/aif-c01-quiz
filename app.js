@@ -580,8 +580,13 @@
     state.seqProgress = { index: index };
     saveState();
 
-    var inWrongBook = isInWrongBook(q.id);
+    // Per-question state: track userAnswer and submitted
+    if (!opts._qs) opts._qs = {};
+    if (!opts._qs[q.id]) opts._qs[q.id] = { userAnswer: null, submitted: false };
+    var qs = opts._qs[q.id];
+
     var pct = Math.round((index + 1) / TOTAL * 100);
+    var inWrongBook = isInWrongBook(q.id);
     var html = "";
     html += '<div class="q-progress"><button class="q-progress-jump" id="btn-jump-progress">第 ' + (index + 1) + ' / ' + TOTAL + ' 题 (' + pct + '%) &#9998;</button>' +
       '<span>Q' + displayQNum(q) + '</span></div>';
@@ -590,40 +595,101 @@
     html += '<span class="q-num-badge">Q' + displayQNum(q) + '</span>';
     html += questionTypeBadge(q);
     html += '<div class="q-stem">' + escapeHtml(q.stem.zh) + '</div>';
-    html += renderAnswerReveal(q);
-    html += '<div class="explain-box"><div class="explain-title">解析</div>';
-    html += '<div class="explain-text">' + escapeHtml(q.explanation.zh || "（无）") + '</div>';
-    html += '</div></div>';
 
-    html += '<button class="btn-secondary mark-wrong-btn' + (inWrongBook ? " active" : "") + '" id="btn-toggle-wrong">' +
-      (inWrongBook ? "&#10003; 已加入错题本" : "&#9888; 标记为错题") + '</button>';
+    // Interactive answer area
+    var answerHtml = "";
+    if (isMatchingType(q)) {
+      answerHtml = renderMatchingAnswerArea(q, qs.userAnswer, qs.submitted);
+    } else if (isOrderingType(q)) {
+      answerHtml = renderOrderingAnswerArea(q, qs.userAnswer, qs.submitted);
+    } else {
+      answerHtml = renderChoiceAnswerArea(q, qs.userAnswer, qs.submitted);
+    }
+    html += '<div id="answer-area">' + answerHtml + '</div>';
+
+    if (qs.submitted) {
+      html += '<div class="explain-box"><div class="explain-title">解析</div>';
+      html += '<div class="explain-text">' + escapeHtml(q.explanation.zh || "（无）") + '</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+
+    // Submit button (before answer)
+    if (!qs.submitted) {
+      html += '<button class="btn-primary" id="btn-submit"' +
+        (!isAnswerComplete(q, qs.userAnswer) ? " disabled" : "") + '>提交答案</button>';
+    } else {
+      html += '<button class="btn-secondary mark-wrong-btn' + (inWrongBook ? " active" : "") + '" id="btn-toggle-wrong">' +
+        (inWrongBook ? "&#10003; 已加入错题本" : "&#9888; 标记为错题") + '</button>';
+    }
 
     html += '<div class="nav-row">' +
       '<button class="btn-secondary" id="btn-prev" ' + (index === 0 ? "disabled" : "") + '>&#8592; 上一题</button>' +
       '<button class="btn-primary" id="btn-next" ' + (index >= TOTAL - 1 ? "disabled" : "") + '>下一题 &#8594;</button></div>';
 
     elApp.innerHTML = html;
-    elApp.querySelector("#btn-prev").addEventListener("click", function () {
-      if (index > 0) replaceView("seq-study", { index: index - 1 });
+
+    // Bind answer interactions
+    function getAnswer() { return qs.userAnswer; }
+    function setAnswer(ans) {
+      qs.userAnswer = ans;
+      rerenderArea();
+    }
+    function rerenderArea() {
+      var area = elApp.querySelector("#answer-area");
+      if (isMatchingType(q)) {
+        area.innerHTML = renderMatchingAnswerArea(q, qs.userAnswer, qs.submitted);
+        bindMatchingEvents(area, q, getAnswer, setAnswer);
+      } else if (isOrderingType(q)) {
+        area.innerHTML = renderOrderingAnswerArea(q, qs.userAnswer, qs.submitted);
+        bindOrderingEvents(area, q, getAnswer, setAnswer);
+      } else {
+        area.innerHTML = renderChoiceAnswerArea(q, qs.userAnswer, qs.submitted);
+        bindChoiceEvents(area, q, getAnswer, setAnswer);
+      }
+      var submitBtn = elApp.querySelector("#btn-submit");
+      if (submitBtn) submitBtn.disabled = !isAnswerComplete(q, qs.userAnswer);
+    }
+
+    // Initial bind
+    var area = elApp.querySelector("#answer-area");
+    if (isMatchingType(q)) bindMatchingEvents(area, q, getAnswer, setAnswer);
+    else if (isOrderingType(q)) bindOrderingEvents(area, q, getAnswer, setAnswer);
+    else bindChoiceEvents(area, q, getAnswer, setAnswer);
+
+    // Submit
+    var submitBtn = elApp.querySelector("#btn-submit");
+    if (submitBtn) submitBtn.addEventListener("click", function () {
+      qs.submitted = true;
+      var correct = isAnswerCorrect(q, qs.userAnswer);
+      if (correct) markCorrect(q.id); else markWrong(q.id);
+      replaceView("seq-study", opts);
     });
-    elApp.querySelector("#btn-next").addEventListener("click", function () {
-      if (index < TOTAL - 1) replaceView("seq-study", { index: index + 1 });
-    });
-    elApp.querySelector("#btn-toggle-wrong").addEventListener("click", function () {
+
+    // Toggle wrong book
+    var wrongBtn = elApp.querySelector("#btn-toggle-wrong");
+    if (wrongBtn) wrongBtn.addEventListener("click", function () {
       var added = toggleWrongBook(q.id);
       toast(added ? "已加入错题本" : "已从错题本移除");
-      replaceView("seq-study", { index: index });
+      replaceView("seq-study", opts);
+    });
+
+    elApp.querySelector("#btn-prev").addEventListener("click", function () {
+      if (index > 0) { opts.index = index - 1; replaceView("seq-study", opts); }
+    });
+    elApp.querySelector("#btn-next").addEventListener("click", function () {
+      if (index < TOTAL - 1) { opts.index = index + 1; replaceView("seq-study", opts); }
     });
     elApp.querySelector("#btn-jump-progress").addEventListener("click", function () {
       openJumpPanel(function (num) {
         var newIndex = num - 1;
         if (newIndex < 0) newIndex = 0;
         if (newIndex >= TOTAL) newIndex = TOTAL - 1;
-        replaceView("seq-study", { index: newIndex });
+        opts.index = newIndex;
+        replaceView("seq-study", opts);
       });
     });
   }
-
   // ---- Topic list ----
   function renderTopicList() {
     var html = '<div class="section-title">选择知识点</div><div class="topic-list">';
@@ -685,6 +751,11 @@
     state.topicProgress[tpKey] = Math.max(state.topicProgress[tpKey] || 0, index + 1);
     saveState();
 
+    // Per-question state
+    if (!opts._qs) opts._qs = {};
+    if (!opts._qs[q.id]) opts._qs[q.id] = { userAnswer: null, submitted: false };
+    var qs = opts._qs[q.id];
+
     var allTopicNames = TOPICS.map(function (t) { return t.name; });
     allTopicNames.push("其他综合题");
     var topicName = allTopicNames[ti];
@@ -698,13 +769,32 @@
     html += '<span class="q-num-badge">Q' + displayQNum(q) + '</span>';
     html += questionTypeBadge(q);
     html += '<div class="q-stem">' + escapeHtml(q.stem.zh) + '</div>';
-    html += renderAnswerReveal(q);
-    html += '<div class="explain-box"><div class="explain-title">解析</div>';
-    html += '<div class="explain-text">' + escapeHtml(q.explanation.zh || "（无）") + '</div>';
-    html += '</div></div>';
 
-    html += '<button class="btn-secondary mark-wrong-btn' + (inWrongBook ? " active" : "") + '" id="btn-toggle-wrong">' +
-      (inWrongBook ? "&#10003; 已加入错题本" : "&#9888; 标记为错题") + '</button>';
+    // Interactive answer area
+    var answerHtml = "";
+    if (isMatchingType(q)) {
+      answerHtml = renderMatchingAnswerArea(q, qs.userAnswer, qs.submitted);
+    } else if (isOrderingType(q)) {
+      answerHtml = renderOrderingAnswerArea(q, qs.userAnswer, qs.submitted);
+    } else {
+      answerHtml = renderChoiceAnswerArea(q, qs.userAnswer, qs.submitted);
+    }
+    html += '<div id="answer-area">' + answerHtml + '</div>';
+
+    if (qs.submitted) {
+      html += '<div class="explain-box"><div class="explain-title">解析</div>';
+      html += '<div class="explain-text">' + escapeHtml(q.explanation.zh || "（无）") + '</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+
+    if (!qs.submitted) {
+      html += '<button class="btn-primary" id="btn-submit"' +
+        (!isAnswerComplete(q, qs.userAnswer) ? " disabled" : "") + '>提交答案</button>';
+    } else {
+      html += '<button class="btn-secondary mark-wrong-btn' + (inWrongBook ? " active" : "") + '" id="btn-toggle-wrong">' +
+        (inWrongBook ? "&#10003; 已加入错题本" : "&#9888; 标记为错题") + '</button>';
+    }
 
     html += '<div class="nav-row">' +
       '<button class="btn-secondary" id="btn-prev" ' + (index === 0 ? "disabled" : "") + '>&#8592; 上一题</button>' +
@@ -713,22 +803,61 @@
     html += '<button class="btn-secondary" id="btn-back-topic">返回知识点列表</button>';
 
     elApp.innerHTML = html;
-    elApp.querySelector("#btn-prev").addEventListener("click", function () {
-      if (index > 0) replaceView("topic-study", { topicIndex: ti, ids: ids, index: index - 1 });
+
+    // Bind answer interactions
+    function getAnswer() { return qs.userAnswer; }
+    function setAnswer(ans) {
+      qs.userAnswer = ans;
+      rerenderArea();
+    }
+    function rerenderArea() {
+      var area = elApp.querySelector("#answer-area");
+      if (isMatchingType(q)) {
+        area.innerHTML = renderMatchingAnswerArea(q, qs.userAnswer, qs.submitted);
+        bindMatchingEvents(area, q, getAnswer, setAnswer);
+      } else if (isOrderingType(q)) {
+        area.innerHTML = renderOrderingAnswerArea(q, qs.userAnswer, qs.submitted);
+        bindOrderingEvents(area, q, getAnswer, setAnswer);
+      } else {
+        area.innerHTML = renderChoiceAnswerArea(q, qs.userAnswer, qs.submitted);
+        bindChoiceEvents(area, q, getAnswer, setAnswer);
+      }
+      var submitBtn = elApp.querySelector("#btn-submit");
+      if (submitBtn) submitBtn.disabled = !isAnswerComplete(q, qs.userAnswer);
+    }
+
+    // Initial bind
+    var area = elApp.querySelector("#answer-area");
+    if (isMatchingType(q)) bindMatchingEvents(area, q, getAnswer, setAnswer);
+    else if (isOrderingType(q)) bindOrderingEvents(area, q, getAnswer, setAnswer);
+    else bindChoiceEvents(area, q, getAnswer, setAnswer);
+
+    // Submit
+    var submitBtn = elApp.querySelector("#btn-submit");
+    if (submitBtn) submitBtn.addEventListener("click", function () {
+      qs.submitted = true;
+      var correct = isAnswerCorrect(q, qs.userAnswer);
+      if (correct) markCorrect(q.id); else markWrong(q.id);
+      replaceView("topic-study", opts);
     });
-    elApp.querySelector("#btn-next").addEventListener("click", function () {
-      if (index < ids.length - 1) replaceView("topic-study", { topicIndex: ti, ids: ids, index: index + 1 });
-    });
-    elApp.querySelector("#btn-toggle-wrong").addEventListener("click", function () {
+
+    var wrongBtn = elApp.querySelector("#btn-toggle-wrong");
+    if (wrongBtn) wrongBtn.addEventListener("click", function () {
       var added = toggleWrongBook(q.id);
       toast(added ? "已加入错题本" : "已从错题本移除");
-      replaceView("topic-study", { topicIndex: ti, ids: ids, index: index });
+      replaceView("topic-study", opts);
+    });
+
+    elApp.querySelector("#btn-prev").addEventListener("click", function () {
+      if (index > 0) { opts.index = index - 1; replaceView("topic-study", opts); }
+    });
+    elApp.querySelector("#btn-next").addEventListener("click", function () {
+      if (index < ids.length - 1) { opts.index = index + 1; replaceView("topic-study", opts); }
     });
     elApp.querySelector("#btn-back-topic").addEventListener("click", function () {
       goBack();
     });
   }
-
   // ---- Study setup ----
   function renderStudySetup() {
     var resume = tryResumeStudy();
