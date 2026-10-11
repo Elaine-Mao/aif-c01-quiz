@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#232f3e">
+<title>AIF-C01 实战备考</title>
+<style>
+:root {
+  --navy: #232f3e;
+  --orange: #ff9900;
+  --bg: #f4f6f8;
+  --card: #ffffff;
+  --text: #1a1f28;
+  --text-muted: #667085;
+  --border: #e3e7ec;
+  --radius: 14px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Roboto, sans-serif;
+}
+.top-bar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: 8px;
+  padding: calc(10px + var(--safe-top)) 12px 10px;
+  background: var(--navy); color: #fff;
+}
+.top-bar .back { color: #fff; font-size: 22px; text-decoration: none; padding: 4px 8px; }
+.top-bar .title { flex: 1; font-size: 16px; font-weight: 600; }
+.content {
+  max-width: 560px; margin: 0 auto;
+  padding: 16px 14px calc(20px + var(--safe-bottom));
+}
+.content h1 {
+  font-size: 20px; color: var(--navy);
+  border-bottom: 2px solid var(--orange);
+  padding-bottom: 8px; margin-top: 24px;
+}
+.content h2 {
+  font-size: 17px; color: var(--navy);
+  margin-top: 20px; padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.content h3 { font-size: 15px; color: var(--navy); margin-top: 16px; }
+.content p, .content li { font-size: 14px; line-height: 1.7; }
+.content blockquote {
+  background: #fff3e0; border-left: 4px solid var(--orange);
+  margin: 12px 0; padding: 10px 14px;
+  font-size: 13px; color: #6b5900; border-radius: 0 8px 8px 0;
+}
+.content code {
+  background: #e8eaed; padding: 2px 6px; border-radius: 4px;
+  font-size: 13px; color: #c7254e;
+}
+.content pre {
+  background: var(--navy); color: #e8eaed;
+  padding: 12px; border-radius: 8px;
+  overflow-x: auto; font-size: 13px;
+}
+.content pre code { background: none; color: inherit; padding: 0; }
+.content table {
+  width: 100%; border-collapse: collapse;
+  margin: 12px 0; font-size: 13px;
+}
+.content th {
+  background: var(--navy); color: #fff;
+  padding: 8px; text-align: left;
+}
+.content td {
+  padding: 8px; border-bottom: 1px solid var(--border);
+}
+.content tr:nth-child(even) { background: #f8f9fa; }
+.content strong { color: var(--navy); }
+.content hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <a class="back" href="index.html">&#8592;</a>
+  <span class="title">AIF-C01 实战备考</span>
+</div>
+<div class="content">
+<h1>AWS AI Practitioner (AIF-C01) 实战备考指南</h1>
+<blockquote>
+<p>基于 504 题真题提炼 | 每个知识点 = <strong>概念说明 + 真题演练 + 解题套路</strong> 💡 <strong>学习方法</strong>: 先看概念（30秒），再做例题（1分钟），最后记住解题套路（关键词→答案）</p>
+</blockquote>
+<hr />
+<h1>一、Bedrock 全家桶（考题占比 ~25%，最重要！）</h1>
+<h2>1.1 Amazon Bedrock — 基础模型托管平台</h2>
+<p><strong>30秒概念</strong>: Bedrock = AWS 的"大模型商店"。提供 Claude、Titan、Llama 等多家 FM，你通过 API 调用就行，不用自己训练或管服务器。</p>
+<h3>📝 真题演练</h3>
+<p><strong>【Q34】公司如何在亚马逊 Bedrock 上安全地使用大型语言模型（LLM）？</strong></p>
+<p>A. 将 LLM 代码部署在公共仓库中B. 将所有数据以纯文本形式存储在 Amazon S3 上✅ C. 使用最小权限访问原则配置 AWS IAM 角色和策略D. 允许组织中所有成员不受限制地访问亚马逊 Bedrock</p>
+<blockquote>
+<p>💡 <strong>解题思路</strong>: 看到"安全使用 Bedrock"→ 直接选 <strong>IAM 最小权限</strong>。Bedrock 安全三板斧：IAM 控权限 + VPC 限网络 + KMS 管加密。</p>
+</blockquote>
+<hr />
+<p><strong>【Q45】一家电子商务公司想要构建一个解决方案，根据客户对产品的书面评价来确定客户的感受。哪些 AWS 服务符合这些要求？（选择两项。）</strong></p>
+<p>A. Amazon LexB. Amazon ComprehendC. Amazon Translate✅ D. Amazon BedrockE. Amazon SageMaker Ground Truth</p>
+<p><strong>正确答案: B, D</strong></p>
+<blockquote>
+<p>💡 <strong>解题思路</strong>: "根据评价确定感受" = <strong>情感分析</strong>。能做情感分析的：① Comprehend（专业 NLP 服务）② Bedrock FM（通用大模型也能做）。Lex 是聊天框架，Translate 是翻译，Ground Truth 是标注——都不对。</p>
+</blockquote>
+<h3>🎯 Bedrock 解题套路</h3>
+<table>
+<thead>
+<tr>
+<th>题目关键词</th>
+<th>答案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"构建聊天机器人/文本生成/问答系统"</td>
+<td>Bedrock</td>
+</tr>
+<tr>
+<td>"安全使用 Bedrock"</td>
+<td>IAM 最小权限 + VPC</td>
+</tr>
+<tr>
+<td>"审计谁调了 Bedrock"</td>
+<td>CloudTrail</td>
+</tr>
+<tr>
+<td>"在多个 FM 中选择最合适的"</td>
+<td>Bedrock（多模型可选）</td>
+</tr>
+<tr>
+<td>"不想管基础设施 + 用大模型"</td>
+<td>Bedrock（全托管）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>1.2 Bedrock Knowledge Bases / RAG — 私有数据增强</h2>
+<p><strong>30秒概念</strong>: 你的 FM 不知道你公司的数据。Knowledge Bases 把你的文档（PDF、网页等）切块→向量化→存起来。用户提问时，先检索相关文档片段，再交给 FM 生成回答。这就是 <strong>RAG（检索增强生成）</strong>。</p>
+<h3>📝 真题演练</h3>
+<p><strong>【Q46】一家公司希望利用亚马逊 Bedrock 平台上的大型语言模型（LLM）为公司的产品手册开发一个聊天界面。这些手册以 PDF 文件的形式存储。哪种解决方案能以最经济高效的方式满足这些要求？</strong></p>
+<p>A. 用产品手册内容微调亚马逊 Bedrock 上的 LLMB. 向亚马逊 Bedrock 上的LLM 提供关于产品手册数据的提示上下文C. 在亚马逊 SageMaker 上训练一个自定义模型✅ D. 将 PDF 文档上传至亚马逊 Bedrock 知识库。当用户提交提示时，使用该知识库提供上下文响应</p>
+<blockquote>
+<p>💡 <strong>解题思路</strong>: 三个关键词：① "PDF 产品手册"（有现成文档）② "聊天界面"（问答系统）③ <strong>"最经济高效"</strong>（成本敏感）。微调太贵，自定义训练更贵。直接把 PDF 扔进 Knowledge Bases 做 RAG，零训练成本。</p>
+</blockquote>
+<hr />
+<p><strong>【Q139】一家公司的大型语言模型（LLM）出现了幻觉。公司怎样才能减少幻觉？</strong></p>
+<p>A. 增加输入的 token 数量B. 微调模型✅ C. 使用检索增强生成（RAG）D. 增加大型语言模型（LLM）的温度</p>
+<blockquote>
+<p>💡 <strong>解题思路</strong>: "减少幻觉"四个字→ 直接选 <strong>RAG</strong>。RAG 让模型基于检索到的真实文档回答，不再自己编造。增加温度反而会增加随机性（更多幻觉）。微调有一定效果但不如 RAG 直接。</p>
+</blockquote>
+<h3>🎯 Knowledge Bases / RAG 解题套路</h3>
+<table>
+<thead>
+<tr>
+<th>题目关键词</th>
+<th>答案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"用公司/私有数据回答问题"</td>
+<td>Knowledge Bases / RAG</td>
+</tr>
+<tr>
+<td>"最经济高效 + 企业文档问答"</td>
+<td>RAG（不需要微调）</td>
+</tr>
+<tr>
+<td>"减少幻觉"</td>
+<td><strong>RAG</strong>（最有效手段）</td>
+</tr>
+<tr>
+<td>"知识频繁更新/变化"</td>
+<td>RAG（更新数据源即可，不用重新训练）</td>
+</tr>
+<tr>
+<td>"分块(chunking)的目的"</td>
+<td>将文档拆成小片段方便检索</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>1.3 Bedrock Guardrails — 内容安全护栏</h2>
+<p><strong>30秒概念</strong>: Guardrails = FM 的"安检门"。在输入端和输出端同时设置过滤规则：拦截有害内容、屏蔽 PII、限制讨论话题。</p>
+<h3>📝 真题演练</h3>
+<p><strong>【Q54】一家公司想要为儿童开发一款互动应用程序，该程序能基于经典故事生成新的故事。该公司希望使用亚马逊 Bedrock，并且需要确保生成的结果和主题适合儿童。哪种 AWS 服务或功能能满足这些要求？</strong></p>
+<p>A. Amazon RekognitionB. 亚马逊 Bedrock 中的自动模型评估✅ C. 亚马逊 Bedrock 的防护栏D. 亚马逊 SageMaker Clarify</p>
+<blockquote>
+<p>💡 <strong>解题思路</strong>: "确保内容适合儿童" = <strong>内容过滤</strong> → <strong>Guardrails</strong>。Rekognition 管图片不管文本，Clarify 管偏差不管内容安全。</p>
+</blockquote>
+<hr />
+<p><strong>【Q67】一家医疗公司在亚马逊 Bedrock 上部署了一个疾病检测模型。为遵守隐私政策，该公司希望防止模型在响应中包含患者的个人信息。同时，该公司还希望在出现政策违规情况时收到通知。哪种解决方案能满足这些要求？</strong></p>
+<p>A. 使用 Amazon Comprehend 的 PII 检测功能B. 手动审核所有输出✅ C. 使用亚马逊 Bedrock 的防护栏来过滤内容。设置亚马逊 CloudWatch 警报以通知策略违规D. 限制用户的输入内容</p>
+<blockquote>
+<p>💡 <strong>解题思路</strong>: 两个需求：① 屏蔽 PII → Guardrails ② 违规通知 → CloudWatch 告警。这是经典组合题：<strong>Guardrails 过滤 + CloudWatch 告警</strong>。</p>
+</blockquote>
+<h3>🎯 Guardrails 解题套路</h3>
+<table>
+<thead>
+<tr>
+<th>题目关键词</th>
+<th>答案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"确保内容适合XX/适龄"</td>
+<td>Guardrails 内容过滤</td>
+</tr>
+<tr>
+<td>"防止泄露个人信息/PII"</td>
+<td>Guardrails PII 屏蔽</td>
+</tr>
+<tr>
+<td>"过滤政治/不当观点"</td>
+<td>Guardrails 话题限制</td>
+</tr>
+<tr>
+<td>"负责任的 AI + Bedrock"</td>
+<td>Guardrails</td>
+</tr>
+<tr>
+<td>"违规时收到通知"</td>
+<td>Guardrails + <strong>CloudWatch 告警</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>1.4 Bedrock Agents — 任务自动化代理</h2>
+<p><strong>30秒概念</strong>: Agent = 能"动手干活"的 AI。普通 FM 只能回答问题；Agent 能理解请求 → 拆解步骤 → <strong>调用外部 API</strong> → 返回结果。</p>
+<h3>📝 真题演练</h3>
+<p><strong>【Q305】一家公司想要开发一个 AI 助手来回答用户的查询。该 AI 助手必须评估特定的数据源，查询外部 API，生成回答选项，并对回答选项进行比较和优先级排序。亚马逊 Bedrock 的哪项功能或资源能满足这些要求？</strong></p>
+<p>A. 护栏✅ B. 代理C. 知识库D. 自定义模型</p>
+<blockquote>
+<p>💡 <strong>解题思路</strong>: 看到 <strong>"查询外部 API"</strong> + <strong>"多步骤操作"</strong> → 一定是 <strong>Agent</strong>。Knowledge Bases 只能检索文档，不能调 API。Guardrails 只管过滤，不能执行操作。</p>
+</blockquote>
+<h3>🎯 Agents 解题套路</h3>
+<table>
+<thead>
+<tr>
+<th>题目关键词</th>
+<th>答案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"调用 API / 执行操作 / 完成交易"</td>
+<td><strong>Agents</strong></td>
+</tr>
+<tr>
+<td>"多步骤工作流编排"</td>
+<td><strong>Agents</strong></td>
+</tr>
+<tr>
+<td>"查订单→退款→发通知"</td>
+<td><strong>Agents</strong></td>
+</tr>
+<tr>
+<td>"Agents 的优势是什么"</td>
+<td>自动化重复任务 + 编排复杂工作流</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1>二、SageMaker 全家桶（考题占比 ~18%）</h1>
+<h2>2.1 SageMaker 推理模式（四选一，必考！）</h2>
+<p><strong>30秒概念</strong>: 模型训练好了，怎么提供服务？SageMaker 提供 4 种推理模式：</p>
+<table>
+<thead>
+<tr>
+<th>模式</th>
+<th>延迟</th>
+<th>适合场景</th>
+<th>记忆关键词</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>实时推理</strong></td>
+<td>毫秒级</td>
+<td>在线应用，低延迟</td>
+<td>"实时""毫秒"</td>
+</tr>
+<tr>
+<td><strong>无服务器推理</strong></td>
+<td>秒级</td>
+<td>流量不稳定，不想管服务器</td>
+<td>"无需管基础设施"</td>
+</tr>
+<tr>
+<td><strong>异步推理</strong></td>
+<td>分钟级</td>
+<td>大输入(≤1GB)，长处理</td>
+<td>"大数据""1GB""排队"</td>
+</tr>
+<tr>
+<td><strong>批量转换</strong></td>
+<td>小时级</td>
+<td>离线批处理整个数据集</td>
+<td>"离线""批量""整个数据集"</td>
+</tr>
+</tbody>
+</table>
+<h3>📝 真题演练</h3>
+<p><strong>【Q6】一家公司在生产环境中使用亚马逊 SageMaker 来运行其机器学习流程。该公司处理的数据量大，单个数据集可达 1GB，处理时间长达 1 小时，但其需要近乎实时的响应延迟。哪种 SageMaker 推理选项符合这些要求？</strong></p>
+<p>A. 实时推理B. 无服务器推理✅ C. 异步推理D. 批量转换</p>
+<blockquote>
+<p>💡 <strong>解题思路</strong>: "1GB 大数据" + "1小时处理" + "近乎实时" → <strong>异步推理</strong>。实时推理处理不了这么大的输入；批量转换是完全离线的，不是"近乎实时"。</p>
+</blockquote>
+<hr />
+<p><strong>【Q27】一家公司需要托管模型并提供预测服务，同时无需管理任何底层基础设施。哪种解决方案能满足这些要求？</strong></p>
+<p>✅ A. 使用 Amazon SageMaker 无服务器推理来部署模型B. 使用 Amazon EC2 实例部署模型C. 使用 AWS Lambda 部署模型D. 使用亚马逊 SageMaker 批量转换功能</p>
+<blockquote>
+<p>💡 <strong>解题思路</strong>: <strong>"无需管理基础设施"</strong> → <strong>无服务器推理</strong>。EC2 需要你管实例，Lambda 有大小限制。</p>
+</blockquote>
+<hr />
+<h2>2.2 SageMaker Clarify — 偏差检测 + 可解释性</h2>
+<p><strong>30秒概念</strong>: Clarify 做两件事：① 检测模型是否对某些群体不公平（偏差）② 用 SHAP 值解释模型为什么做出某个预测（可解释性）。</p>
+<h3>📝 真题演练</h3>
+<p><strong>【Q101】一家公司正在开发一个机器学习模型来批准贷款。该公司必须实施一个解决方案来检测模型中的偏差。该公司还必须能够解释模型的预测结果。哪种解决方案能满足这些要求？</strong></p>
+<p>A. Amazon RekognitionB. Amazon Translate✅ C. 亚马逊 SageMaker ClarifyD. AWS Lambda</p>
+<blockquote>
+<p>💡 <strong>解题思路</strong>: "检测偏差" + "解释预测" = <strong>Clarify</strong> 的两大功能，一步到位。</p>
+</blockquote>
+<hr />
+<p><strong>【Q43】亚马逊 SageMaker Clarify 提供了哪些功能？</strong></p>
+<p>A. 在生产环境中自动扩展模型B. 自动超参数调整C. 数据加密和安全存储✅ D. 在数据准备过程中识别潜在偏差</p>
+<blockquote>
+<p>💡 <strong>解题思路</strong>: Clarify = 偏差 + 可解释性。注意它能在"数据准备阶段"（训练前）就检测偏差，不只是训练后。</p>
+</blockquote>
+<h3>🎯 Clarify 解题套路</h3>
+<table>
+<thead>
+<tr>
+<th>题目关键词</th>
+<th>答案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"检测偏差/公平性"</td>
+<td><strong>Clarify</strong></td>
+</tr>
+<tr>
+<td>"解释模型预测/SHAP"</td>
+<td><strong>Clarify</strong></td>
+</tr>
+<tr>
+<td>"贷款/招聘 + 公平"</td>
+<td><strong>Clarify</strong></td>
+</tr>
+<tr>
+<td>"监管要求 + 可解释性"</td>
+<td><strong>Clarify</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>2.3 SageMaker Ground Truth — 数据标注</h2>
+<p><strong>30秒概念</strong>: 训练模型需要带标签的数据。Ground Truth 提供标注界面 + 标注团队。<strong>Ground Truth Plus</strong> = 全托管标注服务（你不用管人）。</p>
+<h3>📝 真题演练</h3>
+<p><strong>【Q265】一家公司希望利用人工反馈来微调基础模型（FM），从而对训练数据集进行标注，但该公司不想开发标注应用程序或管理标注人员团队。哪个 AWS 服务或功能符合这些要求？</strong></p>
+<p>A. Amazon Mechanical TurkB. SageMaker Data Wrangler✅ C. 亚马逊 SageMaker Ground Truth PlusD. Amazon Comprehend</p>
+<blockquote>
+<p>💡 <strong>解题思路</strong>: "标注" + <strong>"不想管标注团队"</strong> → <strong>Ground Truth Plus</strong>（全托管）。普通 Ground Truth 需要你自己管标注人员。</p>
+</blockquote>
+<hr />
+<h2>2.4 SageMaker Canvas — 无代码 ML</h2>
+<h3>📝 真题演练</h3>
+<p><strong>【Q56】一家数字设备公司希望预测客户对内存硬件的需求。该公司没有编程经验，也不了解机器学习算法。哪种解决方案能满足这些要求？</strong></p>
+<p>A. 使用 Amazon BedrockB. 使用 Amazon SageMaker Studio 笔记本C. 使用 Amazon SageMaker Autopilot✅ D. 将数据导入 Amazon SageMaker Canvas，通过选择数据值来构建 ML 模型</p>
+<blockquote>
+<p>💡 <strong>解题思路</strong>: <strong>"没有编程经验"</strong> + <strong>"不了解 ML 算法"</strong> → <strong>Canvas</strong>（拖拽式无代码建模）。Studio 和 Autopilot 都需要一定编程基础。</p>
+</blockquote>
+<hr />
+<h2>2.5 SageMaker JumpStart — 预训练模型库</h2>
+<h3>📝 真题演练</h3>
+<p><strong>【Q334】一位人工智能从业者必须对一个开源的大语言模型（LLM）进行微调，以用于文本分类。数据集已经准备好了。哪种解决方案能以最少的操作努力满足这些要求？</strong></p>
+<p>A. 在 Amazon Bedrock 上微调模型✅ B. 使用 Amazon SageMaker JumpStart 创建训练任务C. 在 Amazon EC2 上从头训练模型D. 使用 Amazon Comprehend 进行分类</p>
+<blockquote>
+<p>💡 <strong>解题思路</strong>: <strong>"开源 LLM"</strong> + <strong>"微调"</strong> + <strong>"最少操作"</strong> → <strong>JumpStart</strong>。Bedrock 上的模型是商业模型不是开源的；EC2 从头搞太麻烦。</p>
+</blockquote>
+<hr />
+<h2>2.6 SageMaker Model Cards — 模型审计文档</h2>
+<p><strong>30秒概念</strong>: Model Cards = 模型的"身份证"。记录模型的用途、训练数据、性能指标、局限性，供审计和合规使用。</p>
+<h3>📝 真题演练</h3>
+<p><strong>【Q91】一个 ML 研究团队开发定制的 ML 模型。模型成果与其他团队共享。该 ML 团队保留模型训练代码，但需要帮助来记录模型的运行性能以及预期用途。哪种解决方案能满足这些要求？</strong></p>
+<p>A. 使用 Amazon CloudWatchB. 使用 SageMaker Clarify✅ C. 使用预期用途以及训练和推理详情创建 Amazon SageMaker 模型卡片D. 使用 AWS CloudTrail</p>
+<blockquote>
+<p>💡 <strong>解题思路</strong>: "记录模型性能和用途" + "共享给其他团队" → <strong>Model Cards</strong>。CloudWatch 是监控指标，CloudTrail 是 API 日志——都不是"文档记录"。</p>
+</blockquote>
+<hr />
+<h1>三、AI 应用服务（开箱即用）</h1>
+<h2>3.1 速记口诀 + 例题</h2>
+<blockquote>
+<p><strong>看图</strong>用 Rekognition，<strong>读文</strong>用 Textract，<strong>懂话</strong>用 Comprehend<strong>听声</strong>用 Transcribe，<strong>发声</strong>用 Polly，<strong>翻译</strong>用 Translate<strong>聊天框架</strong>用 Lex，<strong>搜文档</strong>用 Kendra，<strong>推荐</strong>用 Personalize</p>
+</blockquote>
+<h3>📝 Textract — 从文档提取文字</h3>
+<p><strong>【Q68】一家公司目前对所有提交的 PDF 格式简历进行人工审核。预计简历数量将超出审核能力。公司需要一个自动化系统将 PDF 格式的简历转换为纯文本格式。哪个 AWS 服务能满足这一要求？</strong></p>
+<p>✅ A. 亚马逊 TextractB. 亚马逊 LexC. 亚马逊 ComprehendD. 亚马逊 Rekognition</p>
+<blockquote>
+<p>💡 <strong>解题思路</strong>: "PDF → 纯文本" = <strong>OCR 提取</strong> → <strong>Textract</strong>。Comprehend 分析文本含义（不提取），Rekognition 分析图像（不读文档）。</p>
+</blockquote>
+<h3>📝 Macie — 发现 S3 中的敏感数据</h3>
+<p><strong>【Q142】一家公司希望将客户服务电子邮件上传至亚马逊 S3。这些邮件有时会包含敏感信息。该公司希望每次发现敏感信息时都能收到警报。哪种解决方案能实现敏感信息检测的完全自动化？</strong></p>
+<p>✅ A. 配置 Amazon Macie 以检测上传到 Amazon S3 的文档中的敏感信息B. 手动审核所有电子邮件C. 使用 Amazon Comprehend 检测D. 使用 Amazon Bedrock Guardrails</p>
+<blockquote>
+<p>💡 <strong>解题思路</strong>: "S3" + "敏感信息" + "自动检测" → <strong>Macie</strong>。Guardrails 过滤 FM 输出，不扫描 S3；Comprehend 做 NLP 分析，不扫描存储。<strong>记住：S3 里找 PII = Macie。</strong></p>
+</blockquote>
+<h3>📝 CloudTrail — API 审计日志</h3>
+<p><strong>【Q373】一家公司必须记录每个 AI 从业者在 AWS 账户中所采取的操作。哪种 AWS 服务能满足这些要求？</strong></p>
+<p>A. Amazon CloudWatchB. Amazon SageMaker Model Monitor✅ C. AWS CloudTrailD. Amazon Macie</p>
+<blockquote>
+<p>💡 <strong>解题思路</strong>: "记录操作" = <strong>审计日志</strong> → <strong>CloudTrail</strong>。CloudWatch 是监控性能指标（CPU、延迟等），不记录"谁做了什么"。</p>
+</blockquote>
+<hr />
+<h1>四、核心概念 + 真题</h1>
+<h2>4.1 微调 vs RAG vs Prompt Engineering（出现率最高！）</h2>
+<p><strong>记住这张决策表，能解决 30%+ 的题：</strong></p>
+<table>
+<thead>
+<tr>
+<th>需求</th>
+<th>选</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>只需控制输出长度/语言/风格</td>
+<td><strong>Prompt Engineering</strong></td>
+</tr>
+<tr>
+<td>需要引用最新/私有数据</td>
+<td><strong>RAG</strong></td>
+</tr>
+<tr>
+<td>数据频繁变化</td>
+<td><strong>RAG</strong></td>
+</tr>
+<tr>
+<td>需要理解专业领域术语</td>
+<td><strong>Fine-tuning</strong></td>
+</tr>
+<tr>
+<td>有标注数据集要提升特定任务</td>
+<td><strong>Fine-tuning</strong></td>
+</tr>
+<tr>
+<td>成本敏感</td>
+<td>Prompt → RAG → Fine-tuning</td>
+</tr>
+<tr>
+<td>减少幻觉</td>
+<td><strong>RAG</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>成本排序（必记！）</strong>: Prompt Engineering &lt; RAG &lt; Fine-tuning</p>
+<h3>📝 真题演练</h3>
+<p><strong>【Q5】一家公司需要该语言模型的输出简短，并且使用特定的语言。哪种解决方案能使大语言模型的响应质量符合公司的期望？</strong></p>
+<p>✅ A. 调整提示B. 选择一个不同规模的大型语言模型C. 升高温度D. 提高 Top K 的值</p>
+<blockquote>
+<p>💡 "输出简短" + "特定语言" = 控制格式/风格 → <strong>Prompt Engineering</strong></p>
+</blockquote>
+<hr />
+<p><strong>【Q64】该聊天机器人从研究论文数据库中搜索答案。经过多次提示工程尝试，FM 由于复杂的科学术语表现不佳。公司如何提升表现？</strong></p>
+<p>A. 增加 FM 温度B. 使用更大的 FM✅ C. 利用领域自适应微调将 FM 适配到复杂的科学术语上D. 增加更多的提示示例</p>
+<blockquote>
+<p>💡 "提示工程已尝试但不够" + <strong>"复杂科学术语"</strong> → 需要 <strong>Fine-tuning</strong>（让模型理解领域语言）</p>
+</blockquote>
+<hr />
+<p><strong>【Q98】一家公司希望部署聊天机器人，为客服提供实时上下文回应。使用公司政策作为知识库。哪种方案最经济高效？</strong></p>
+<p>A. 使用微调后的 LLM✅ B. 实现检索增强生成（RAG）提供上下文响应C. 使用 Amazon Lex 构建D. 从头训练自定义模型</p>
+<blockquote>
+<p>💡 "公司政策作为知识库" + <strong>"最经济高效"</strong> → <strong>RAG</strong>。微调成本高，且政策更新需重新训练。</p>
+</blockquote>
+<hr />
+<h2>4.2 LLM 推理参数</h2>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>低值效果</th>
+<th>高值效果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Temperature</strong></td>
+<td>确定、一致、重复（适合事实问答）</td>
+<td>创意、多样、随机（适合写诗/故事）</td>
+</tr>
+<tr>
+<td><strong>Top-K</strong></td>
+<td>只从最高概率几个词选 → 更确定</td>
+<td>候选词多 → 更多样</td>
+</tr>
+<tr>
+<td><strong>Top-P</strong></td>
+<td>只选概率最高的一小部分 → 更确定</td>
+<td>选更大概率范围 → 更多样</td>
+</tr>
+</tbody>
+</table>
+<p><strong>记忆口诀</strong>: 温度低 = 冷静理性; 温度高 = 热情奔放</p>
+<h3>📝 真题演练</h3>
+<p><strong>【Q65】一家公司希望在 Bedrock 上使用 LLM 进行情感分析。该公司需要该 LLM 对相同的输入提示给出一致且确定的响应。人工智能从业者应该如何配置推理参数？</strong></p>
+<p>✅ A. 将温度设为 0B. 将温度设为 1C. 将 Top-K 设为较大值D. 禁用 Top-P 采样</p>
+<blockquote>
+<p>💡 "一致且确定" → 温度 = 0（完全确定性输出，没有随机性）</p>
+</blockquote>
+<hr />
+<h2>4.3 过拟合 vs 欠拟合</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>过拟合</th>
+<th>欠拟合</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>症状</strong></td>
+<td>训练集好，测试集差</td>
+<td>训练和测试都差</td>
+</tr>
+<tr>
+<td><strong>原因</strong></td>
+<td>模型"背答案"了</td>
+<td>模型太简单</td>
+</tr>
+<tr>
+<td><strong>解决</strong></td>
+<td>增加数据、正则化、Dropout</td>
+<td>增加模型复杂度、增加特征</td>
+</tr>
+</tbody>
+</table>
+<h3>📝 真题演练</h3>
+<p><strong>【Q44】一家公司正在开发一种新模型来预测特定商品的价格。该模型在训练数据集上表现良好。但投入生产后性能大幅下降。公司应该怎么办？</strong></p>
+<p>A. 减少训练数据量B. 向模型添加超参数✅ C. 增加训练数据量D. 增加模型训练时间</p>
+<blockquote>
+<p>💡 "训练好、生产差" = <strong>过拟合</strong>。解决办法首选：<strong>增加训练数据量</strong>。</p>
+</blockquote>
+<hr />
+<h2>4.4 评估指标</h2>
+<h3>分类任务关键指标</h3>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>一句话</th>
+<th>什么时候用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>准确率</strong></td>
+<td>答对了多少</td>
+<td>数据均衡时</td>
+</tr>
+<tr>
+<td><strong>精确率</strong></td>
+<td>说是的里面真有多少</td>
+<td>不能误报（垃圾邮件分类）</td>
+</tr>
+<tr>
+<td><strong>召回率</strong></td>
+<td>真是的里面找到多少</td>
+<td>不能漏报（癌症检测）</td>
+</tr>
+<tr>
+<td><strong>F1</strong></td>
+<td>精确率和召回率的平衡</td>
+<td>两者都重要时</td>
+</tr>
+<tr>
+<td><strong>AUC-ROC</strong></td>
+<td>综合各阈值的表现</td>
+<td>评估分类器整体能力</td>
+</tr>
+</tbody>
+</table>
+<h3>📝 真题演练</h3>
+<p><strong>【Q4】一家公司构建了一个图像分类模型。该公司希望评估该模型正确分类了多少张图像。公司应该使用哪种评估指标？</strong></p>
+<p>A. 决定系数（R² 分数）✅ B. 准确性C. 均方根误差（RMSE）D. 学习率</p>
+<blockquote>
+<p>💡 "正确分类了多少" = <strong>准确率 (Accuracy)</strong>。R² 和 RMSE 是回归指标，学习率是训练参数不是评估指标。</p>
+</blockquote>
+<hr />
+<h2>4.5 嵌入 (Embedding) 与向量数据库</h2>
+<p><strong>30秒概念</strong>: 嵌入 = 把文字/图片变成一串数字（向量）。语义相近的内容，向量距离更近。RAG 就是靠嵌入来"找到相关文档"的。</p>
+<h3>📝 真题演练</h3>
+<p><strong>【Q21】亚马逊 OpenSearch 服务的哪项功能使公司能够构建向量数据库应用程序？</strong></p>
+<p>A. 文本分析插件B. 异常检测功能✅ C. 可扩展的索引管理和最近邻搜索能力D. 全文搜索引擎</p>
+<blockquote>
+<p>💡 "向量数据库" 的核心能力 = <strong>最近邻搜索</strong>（找向量空间中最近的点）。OpenSearch 支持 k-NN 搜索 → 用于 RAG 的向量存储后端。</p>
+</blockquote>
+<hr />
+<h2>4.6 偏差与负责任的 AI</h2>
+<h3>📝 真题演练</h3>
+<p><strong>【Q49】一家贷款公司正在构建一个基于生成式人工智能的解决方案，为新客户提供折扣。该公司希望负责任地构建和使用人工智能应用。公司应该遵循哪些做法？（选择两项。）</strong></p>
+<p>✅ A. 定期审查模型的决策和输出，以识别并解决偏差B. 排他性地使用专有数据来训练✅ C. 建立人工监督机制，在关键决策点进行复核D. 对所有人统一折扣E. 持续增加模型参数</p>
+<blockquote>
+<p>💡 "负责任的 AI" 两个核心：① <strong>定期审查偏差</strong> ② <strong>人工监督（Human-in-the-loop）</strong></p>
+</blockquote>
+<hr />
+<h2>4.7 幻觉 (Hallucination)</h2>
+<p><strong>30秒概念</strong>: FM 编造看起来合理但实际错误的内容 = 幻觉。</p>
+<p><strong>缓解手段（按效果排序）</strong>:</p>
+<ol>
+<li><strong>RAG</strong> — 最有效，基于真实文档回答</li>
+<li><strong>Guardrails Grounding Check</strong> — 验证输出是否基于参考资料</li>
+<li><strong>Prompt 指令</strong> — "只根据提供的信息回答"</li>
+<li><strong>降低温度</strong> — 减少随机性</li>
+<li><strong>人工审核 (A2I)</strong> — 关键输出交给人审查</li>
+</ol>
+<h3>📝 真题演练</h3>
+<p><strong>【Q77】一位人工智能从业者正在使用 LLM 为营销活动生成内容。生成的内容听起来合理且真实，但实际上却是错误的。这个大型语言模型遇到了什么问题？</strong></p>
+<p>A. 偏差✅ B. 幻觉C. 过拟合D. 正则化不足</p>
+<blockquote>
+<p>💡 "合理但错误" = <strong>幻觉</strong>的典型定义。偏差是对特定群体不公平，过拟合是训练好测试差。</p>
+</blockquote>
+<hr />
+<h1>五、安全合规四件套 + 例题</h1>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>选什么</th>
+<th>例题关键词</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>谁能访问？</td>
+<td><strong>IAM</strong></td>
+<td>"控制访问""限制权限""只有授权用户"</td>
+</tr>
+<tr>
+<td>S3里有隐私？</td>
+<td><strong>Macie</strong></td>
+<td>"S3""敏感数据""PII 发现"</td>
+</tr>
+<tr>
+<td>谁调了什么？</td>
+<td><strong>CloudTrail</strong></td>
+<td>"记录操作""审计""API 日志"</td>
+</tr>
+<tr>
+<td>输出安全吗？</td>
+<td><strong>Guardrails</strong></td>
+<td>"过滤""内容安全""PII 屏蔽"</td>
+</tr>
+<tr>
+<td>数据加密？</td>
+<td><strong>KMS</strong></td>
+<td>"加密""密钥管理"</td>
+</tr>
+<tr>
+<td>不能出公网？</td>
+<td><strong>VPC 端点</strong></td>
+<td>"私有网络""不访问互联网"</td>
+</tr>
+</tbody>
+</table>
+<h3>📝 真题演练</h3>
+<p><strong>【Q13】一家金融机构正在使用亚马逊 Bedrock 开发一款 AI 应用。该 VPC 不允许访问任何互联网流量。哪个 AWS 服务或功能能满足这些要求？</strong></p>
+<p>✅ A. AWS PrivateLinkB. Amazon MacieC. VPN 连接D. Amazon CloudWatch</p>
+<blockquote>
+<p>💡 "VPC" + "不允许互联网" → <strong>PrivateLink / VPC 端点</strong>（在私有网络内访问 AWS 服务，不经过公网）</p>
+</blockquote>
+<hr />
+<h1>六、易混淆辨析 + 真题</h1>
+<h2>🆚 Guardrails vs Macie vs Comprehend</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Guardrails</th>
+<th>Macie</th>
+<th>Comprehend</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>管什么</strong></td>
+<td>FM 输入/输出</td>
+<td>S3 存储</td>
+<td>任意文本</td>
+</tr>
+<tr>
+<td><strong>做什么</strong></td>
+<td>实时过滤内容</td>
+<td>发现敏感数据</td>
+<td>NLP分析</td>
+</tr>
+<tr>
+<td><strong>题目信号</strong></td>
+<td>"Bedrock + 过滤"</td>
+<td>"S3 + PII"</td>
+<td>"情感/实体/毒性"</td>
+</tr>
+</tbody>
+</table>
+<h2>🆚 CloudTrail vs CloudWatch</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>CloudTrail</th>
+<th>CloudWatch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>记什么</strong></td>
+<td>谁做了什么（API调用）</td>
+<td>系统表现（指标/日志）</td>
+</tr>
+<tr>
+<td><strong>题目信号</strong></td>
+<td>"审计""记录操作"</td>
+<td>"监控性能""告警"</td>
+</tr>
+</tbody>
+</table>
+<h2>🆚 Fine-tuning vs 持续预训练</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Fine-tuning</th>
+<th>持续预训练</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>数据</strong></td>
+<td><strong>有标签</strong>的标注数据</td>
+<td><strong>无标签</strong>的原始数据</td>
+</tr>
+<tr>
+<td><strong>目的</strong></td>
+<td>提升特定任务表现</td>
+<td>让模型学习领域语言</td>
+</tr>
+<tr>
+<td><strong>题目信号</strong></td>
+<td>"标注数据集""特定任务"</td>
+<td>"无标签""领域语言"</td>
+</tr>
+</tbody>
+</table>
+<h2>🆚 Ground Truth vs A2I</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Ground Truth</th>
+<th>A2I</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>时机</strong></td>
+<td>训练前（给数据打标签）</td>
+<td>推理后（审核预测结果）</td>
+</tr>
+<tr>
+<td><strong>题目信号</strong></td>
+<td>"标注""标签""训练数据"</td>
+<td>"人工审核""低置信度"</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1>七、考前 30 分钟速记</h1>
+<h2>✅ 10 个必记结论</h2>
+<ol>
+<li><strong>成本排序</strong>: Prompt &lt; RAG &lt; Fine-tuning</li>
+<li><strong>减少幻觉</strong>: RAG 最有效</li>
+<li><strong>偏差检测</strong>: SageMaker Clarify</li>
+<li><strong>内容过滤</strong>: Bedrock Guardrails</li>
+<li><strong>S3 找 PII</strong>: Amazon Macie</li>
+<li><strong>API 审计</strong>: AWS CloudTrail</li>
+<li><strong>性能监控</strong>: Amazon CloudWatch</li>
+<li><strong>无代码 ML</strong>: SageMaker Canvas</li>
+<li><strong>数据标注</strong>: SageMaker Ground Truth（Plus = 全托管）</li>
+<li><strong>模型审计记录</strong>: SageMaker Model Cards</li>
+</ol>
+<h2>✅ 5 个易错陷阱</h2>
+<ol>
+<li><strong>Rekognition 只管图像/视频</strong> — 文本分析用 Comprehend，不要选错</li>
+<li><strong>温度高 ≠ 更好</strong> — 事实问答/一致性需求要低温度</li>
+<li><strong>Lex ≠ 完整聊天机器人</strong> — Lex 是对话框架，需要配合 FM 使用</li>
+<li><strong>Clarify 不只管偏差</strong> — 还做可解释性分析（SHAP）</li>
+<li><strong>Fine-tuning 需要标注数据，持续预训练不需要</strong> — 这是最常混淆的</li>
+</ol>
+</div>
+</body>
+</html>

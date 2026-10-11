@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#232f3e">
+<title>AIF-C01 备考指南</title>
+<style>
+:root {
+  --navy: #232f3e;
+  --orange: #ff9900;
+  --bg: #f4f6f8;
+  --card: #ffffff;
+  --text: #1a1f28;
+  --text-muted: #667085;
+  --border: #e3e7ec;
+  --radius: 14px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Roboto, sans-serif;
+}
+.top-bar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: 8px;
+  padding: calc(10px + var(--safe-top)) 12px 10px;
+  background: var(--navy); color: #fff;
+}
+.top-bar .back { color: #fff; font-size: 22px; text-decoration: none; padding: 4px 8px; }
+.top-bar .title { flex: 1; font-size: 16px; font-weight: 600; }
+.content {
+  max-width: 560px; margin: 0 auto;
+  padding: 16px 14px calc(20px + var(--safe-bottom));
+}
+.content h1 {
+  font-size: 20px; color: var(--navy);
+  border-bottom: 2px solid var(--orange);
+  padding-bottom: 8px; margin-top: 24px;
+}
+.content h2 {
+  font-size: 17px; color: var(--navy);
+  margin-top: 20px; padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.content h3 { font-size: 15px; color: var(--navy); margin-top: 16px; }
+.content p, .content li { font-size: 14px; line-height: 1.7; }
+.content blockquote {
+  background: #fff3e0; border-left: 4px solid var(--orange);
+  margin: 12px 0; padding: 10px 14px;
+  font-size: 13px; color: #6b5900; border-radius: 0 8px 8px 0;
+}
+.content code {
+  background: #e8eaed; padding: 2px 6px; border-radius: 4px;
+  font-size: 13px; color: #c7254e;
+}
+.content pre {
+  background: var(--navy); color: #e8eaed;
+  padding: 12px; border-radius: 8px;
+  overflow-x: auto; font-size: 13px;
+}
+.content pre code { background: none; color: inherit; padding: 0; }
+.content table {
+  width: 100%; border-collapse: collapse;
+  margin: 12px 0; font-size: 13px;
+}
+.content th {
+  background: var(--navy); color: #fff;
+  padding: 8px; text-align: left;
+}
+.content td {
+  padding: 8px; border-bottom: 1px solid var(--border);
+}
+.content tr:nth-child(even) { background: #f8f9fa; }
+.content strong { color: var(--navy); }
+.content hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <a class="back" href="index.html">&#8592;</a>
+  <span class="title">AIF-C01 备考指南</span>
+</div>
+<div class="content">
+<h1>AWS AI Practitioner (AIF-C01) 备考指南</h1>
+<blockquote>
+<p>基于 504 题真题题库提炼，覆盖 44 个 AWS 工具 + 50+ 个核心概念</p>
+</blockquote>
+<hr />
+<h1>第一部分：AWS AI 工具大全</h1>
+<blockquote>
+<p>按考试重要性分四个梯队。每个工具写清楚：<strong>是什么 → 干什么用 → 考试怎么考</strong></p>
+</blockquote>
+<hr />
+<h2>🔴 第一梯队：Bedrock 生态（考题占比 ~25%）</h2>
+<h3>1. Amazon Bedrock ⭐⭐⭐⭐⭐ (120题)</h3>
+<p><strong>是什么</strong>: AWS 的<strong>托管基础模型(FM)平台</strong>。你不需要自己训练大模型，Bedrock 提供了多家公司的现成大模型（Claude、Titan、Llama、Mistral 等），通过 API 直接调用。</p>
+<p><strong>核心能力</strong>:</p>
+<ul>
+<li>调用多种基础模型（FM），按 token 付费</li>
+<li>支持对模型做微调（Fine-tuning）</li>
+<li>提供模型评估功能（自动/人工评估）</li>
+<li>配合 Knowledge Bases、Guardrails、Agents 构成完整生态</li>
+</ul>
+<p><strong>考试怎么考</strong>:</p>
+<ul>
+<li>🎯 "公司要构建聊天机器人/文本生成/情感分析应用" → <strong>Bedrock</strong></li>
+<li>🎯 "需要安全调用大模型" → Bedrock + <strong>IAM 最小权限</strong> + <strong>VPC 端点</strong></li>
+<li>🎯 "在多个 FM 之间选择" → Bedrock 提供多模型对比能力</li>
+<li>🎯 "公司不想自建基础设施" → Bedrock 是全托管的</li>
+</ul>
+<hr />
+<h3>2. Bedrock Knowledge Bases（知识库）⭐⭐⭐⭐ (22题)</h3>
+<p><strong>是什么</strong>: Bedrock 的<strong>RAG 组件</strong>。把你的私有文档（PDF、网页、数据库）自动向量化存储，让 FM 能检索并引用你的数据来回答问题。</p>
+<p><strong>核心能力</strong>:</p>
+<ul>
+<li>连接 S3 数据源，自动分块(chunking) + 向量化(embedding)</li>
+<li>查询时自动检索相关文档片段，注入到 FM 的上下文中</li>
+<li>支持多种向量数据库后端（OpenSearch、Pinecone 等）</li>
+</ul>
+<p><strong>考试怎么考</strong>:</p>
+<ul>
+<li>🎯 "用公司私有数据回答问题" → <strong>Knowledge Bases / RAG</strong></li>
+<li>🎯 "最经济高效的方式让 FM 引用企业文档" → Knowledge Bases（不需要微调）</li>
+<li>🎯 "减少 FM 幻觉" → RAG 让模型基于真实文档回答</li>
+<li>🎯 "知识频繁更新" → RAG（微调需要重新训练，RAG 只需更新数据源）</li>
+</ul>
+<hr />
+<h3>3. Bedrock Guardrails（护栏/防护机制）⭐⭐⭐⭐ (23题)</h3>
+<p><strong>是什么</strong>: Bedrock 的<strong>内容安全过滤层</strong>。在 FM 的输入和输出两端设置过滤规则，拦截不合规的内容。</p>
+<p><strong>核心能力</strong>:</p>
+<ul>
+<li><strong>内容过滤</strong>: 拦截暴力、仇恨、性相关、侮辱性内容（按严重程度可调阈值）</li>
+<li><strong>PII 屏蔽</strong>: 自动检测并屏蔽姓名、电话、邮箱、身份证号等个人信息</li>
+<li><strong>话题限制</strong>: 禁止模型讨论特定话题（如政治、竞品）</li>
+<li><strong>上下文接地检查 (Grounding Check)</strong>: 验证模型回答是否基于提供的参考材料</li>
+</ul>
+<p><strong>考试怎么考</strong>:</p>
+<ul>
+<li>🎯 "确保生成内容适合儿童" → <strong>Guardrails 内容过滤</strong></li>
+<li>🎯 "防止模型泄露患者个人信息" → <strong>Guardrails PII 屏蔽</strong></li>
+<li>🎯 "过滤政治偏见内容" → <strong>Guardrails 话题限制</strong></li>
+<li>🎯 "确保负责任的 AI" → <strong>Guardrails</strong></li>
+<li>🎯 "出现违规时收到通知" → Guardrails + <strong>CloudWatch 告警</strong></li>
+</ul>
+<hr />
+<h3>4. Bedrock Agents（代理）⭐⭐⭐ (24题)</h3>
+<p><strong>是什么</strong>: Bedrock 的<strong>任务自动化引擎</strong>。让 FM 不只是回答问题，还能主动调用外部 API、查询数据库、执行多步骤工作流。</p>
+<p><strong>核心能力</strong>:</p>
+<ul>
+<li>理解用户请求 → 拆解成步骤 → 依次调用 API → 汇总结果</li>
+<li>可以连接 Knowledge Bases 获取知识</li>
+<li>支持 Lambda 函数作为 Action Group</li>
+</ul>
+<p><strong>考试怎么考</strong>:</p>
+<ul>
+<li>🎯 "AI 助手需要查 API、执行操作、完成交易" → <strong>Bedrock Agents</strong></li>
+<li>🎯 "编排复杂工作流 + 知识检索" → Agents + Knowledge Bases</li>
+<li>🎯 "自动化客服流程（查订单→退款→发邮件）" → <strong>Agents</strong></li>
+</ul>
+<hr />
+<h2>🔴 第二梯队：SageMaker 生态（考题占比 ~18%）</h2>
+<h3>5. Amazon SageMaker ⭐⭐⭐⭐⭐ (70题)</h3>
+<p><strong>是什么</strong>: AWS 的<strong>端到端机器学习平台</strong>。从数据准备、模型训练、调优、部署到监控，一站式搞定。</p>
+<p><strong>核心能力</strong>:</p>
+<ul>
+<li><strong>训练</strong>: 内置 17+ 算法，也支持自定义算法/框架</li>
+<li><strong>推理（4种模式，必考！）</strong>:- <strong>实时推理 (Real-time)</strong>: 毫秒级延迟，持续在线端点 → 适合在线应用</li>
+<li><strong>无服务器推理 (Serverless)</strong>: 自动扩缩，无需管基础设施 → 适合流量不稳定</li>
+<li><strong>异步推理 (Async)</strong>: 处理大输入（最大 1GB），排队处理 → 适合大文件/长任务</li>
+<li><strong>批量转换 (Batch Transform)</strong>: 离线批处理整个数据集 → 适合批量预测</li>
+<li><strong>Notebook</strong>: SageMaker Studio 提供 Jupyter 开发环境</li>
+</ul>
+<p><strong>考试怎么考</strong>:</p>
+<ul>
+<li>🎯 "构建/训练/部署 ML 模型" → <strong>SageMaker</strong></li>
+<li>🎯 "近实时响应 + 大数据输入 + 长处理时间" → <strong>异步推理</strong></li>
+<li>🎯 "无需管基础设施" → <strong>无服务器推理</strong></li>
+<li>🎯 "离线批量处理" → <strong>批量转换</strong></li>
+<li>🎯 "低延迟在线预测" → <strong>实时推理</strong></li>
+</ul>
+<hr />
+<h3>6. SageMaker Clarify ⭐⭐⭐⭐ (23题)</h3>
+<p><strong>是什么</strong>: SageMaker 的<strong>偏差检测 + 可解释性分析工具</strong>。</p>
+<p><strong>核心能力</strong>:</p>
+<ul>
+<li><strong>偏差检测</strong>: 分析训练数据和模型预测是否对特定群体不公平</li>
+<li><strong>特征重要性</strong>: 用 SHAP 值解释哪些特征最影响模型预测</li>
+<li><strong>模型可解释性报告</strong>: 生成报告供监管审计</li>
+</ul>
+<p><strong>考试怎么考</strong>:</p>
+<ul>
+<li>🎯 "检测模型偏差/公平性" → <strong>Clarify</strong></li>
+<li>🎯 "解释模型为什么做出这个预测" → <strong>Clarify (SHAP)</strong></li>
+<li>🎯 "满足监管可解释性要求" → <strong>Clarify</strong></li>
+<li>🎯 "在训练前检测数据偏差" → <strong>Clarify</strong></li>
+</ul>
+<hr />
+<h3>7. SageMaker Ground Truth ⭐⭐⭐ (12题)</h3>
+<p><strong>是什么</strong>: AWS 的<strong>数据标注服务</strong>。为训练数据打标签（如图片分类标签、文本情感标签）。</p>
+<p><strong>核心能力</strong>:</p>
+<ul>
+<li>内置标注界面（图像、文本、视频）</li>
+<li>支持人工标注 + 自动标注结合（active learning）</li>
+<li><strong>Ground Truth Plus</strong>: 托管标注团队，你不需要管标注人员</li>
+</ul>
+<p><strong>考试怎么考</strong>:</p>
+<ul>
+<li>🎯 "需要标注训练数据" → <strong>Ground Truth</strong></li>
+<li>🎯 "不想自己管标注团队" → <strong>Ground Truth Plus</strong></li>
+<li>🎯 "用人工反馈微调 FM (RLHF)" → <strong>Ground Truth</strong></li>
+</ul>
+<hr />
+<h3>8. SageMaker JumpStart ⭐⭐⭐ (9题)</h3>
+<p><strong>是什么</strong>: SageMaker 的<strong>预训练模型市场</strong>。提供 300+ 开源预训练模型，一键部署或微调。</p>
+<p><strong>考试怎么考</strong>:</p>
+<ul>
+<li>🎯 "快速部署开源 FM" → <strong>JumpStart</strong></li>
+<li>🎯 "在 VPC 内部署 FM" → <strong>JumpStart</strong>（区别于 Bedrock 在 AWS 托管）</li>
+<li>🎯 "控制员工对 FM 的访问" → JumpStart + IAM</li>
+</ul>
+<hr />
+<h3>9. SageMaker Canvas ⭐⭐⭐ (8题)</h3>
+<p><strong>是什么</strong>: SageMaker 的<strong>无代码 ML 工具</strong>。面向非技术人员，拖拽式建模。</p>
+<p><strong>考试怎么考</strong>:</p>
+<ul>
+<li>🎯 "没有编程经验" + "需要建 ML 模型" → <strong>Canvas</strong></li>
+<li>🎯 "业务用户做需求预测/员工流失预测" → <strong>Canvas</strong></li>
+</ul>
+<hr />
+<h3>10. SageMaker Model Cards ⭐⭐ (17题)</h3>
+<p><strong>是什么</strong>: 模型的<strong>文档记录卡片</strong>。记录模型的用途、训练数据、性能指标、限制条件等元信息，用于审计和合规。</p>
+<p><strong>考试怎么考</strong>:</p>
+<ul>
+<li>🎯 "为审计目的记录模型信息" → <strong>Model Cards</strong></li>
+<li>🎯 "记录模型训练和性能详情" → <strong>Model Cards</strong></li>
+</ul>
+<hr />
+<h3>11. 其他 SageMaker 组件</h3>
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>功能</th>
+<th>考题关键词</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Model Monitor</strong></td>
+<td>监控生产模型的数据漂移/性能下降</td>
+<td>"部署后监控模型"</td>
+</tr>
+<tr>
+<td><strong>Feature Store</strong></td>
+<td>跨团队共享特征变量</td>
+<td>"多团队共享特征"</td>
+</tr>
+<tr>
+<td><strong>Pipelines</strong></td>
+<td>ML 工作流编排（训练→评估→部署）</td>
+<td>"自动化 ML 流水线"</td>
+</tr>
+<tr>
+<td><strong>Data Wrangler</strong></td>
+<td>可视化数据清洗/转换</td>
+<td>"数据准备"</td>
+</tr>
+<tr>
+<td><strong>Autopilot</strong></td>
+<td>自动化模型选择和训练 (AutoML)</td>
+<td>"自动模型调优"</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>🟠 第三梯队：AI 应用服务（考题占比 ~12%）</h2>
+<p>这些是"<strong>开箱即用</strong>"的 AI 服务，不需要自己训练模型，直接调 API。</p>
+<table>
+<thead>
+<tr>
+<th>服务</th>
+<th>功能一句话</th>
+<th>典型考题场景</th>
+<th>频次</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Amazon Rekognition</strong></td>
+<td>图像/视频分析</td>
+<td>人脸识别、物体检测、PPE检测、内容审核、自定义标签分类</td>
+<td>27</td>
+</tr>
+<tr>
+<td><strong>Amazon Comprehend</strong></td>
+<td>文本NLP分析</td>
+<td>情感分析、实体识别、语言检测、毒性检测、关键词提取</td>
+<td>11</td>
+</tr>
+<tr>
+<td><strong>Amazon Comprehend Medical</strong></td>
+<td>医疗文本分析</td>
+<td>从患者记录提取医疗实体和关系</td>
+<td>1</td>
+</tr>
+<tr>
+<td><strong>Amazon Textract</strong></td>
+<td>文档 OCR</td>
+<td>PDF→文字、表格提取、发票识别、手写体识别</td>
+<td>15</td>
+</tr>
+<tr>
+<td><strong>Amazon Polly</strong></td>
+<td>文字→语音</td>
+<td>多语言语音合成、纪录片旁白</td>
+<td>12</td>
+</tr>
+<tr>
+<td><strong>Amazon Transcribe</strong></td>
+<td>语音→文字</td>
+<td>会议转录、字幕生成</td>
+<td>4</td>
+</tr>
+<tr>
+<td><strong>Amazon Translate</strong></td>
+<td>机器翻译</td>
+<td>多语言翻译</td>
+<td>3</td>
+</tr>
+<tr>
+<td><strong>Amazon Lex</strong></td>
+<td>对话机器人引擎</td>
+<td>构建语音/文字聊天机器人的底层框架</td>
+<td>8</td>
+</tr>
+<tr>
+<td><strong>Amazon Kendra</strong></td>
+<td>企业智能搜索</td>
+<td>跨文档语义搜索</td>
+<td>11</td>
+</tr>
+<tr>
+<td><strong>Amazon Personalize</strong></td>
+<td>个性化推荐</td>
+<td>产品/内容推荐引擎</td>
+<td>6</td>
+</tr>
+<tr>
+<td><strong>Amazon Forecast</strong></td>
+<td>时间序列预测</td>
+<td>需求预测、库存规划</td>
+<td>1</td>
+</tr>
+<tr>
+<td><strong>Amazon Fraud Detector</strong></td>
+<td>欺诈检测</td>
+<td>交易风险识别</td>
+<td>1</td>
+</tr>
+<tr>
+<td><strong>Amazon Q</strong></td>
+<td>AI 助手</td>
+<td>代码生成（Q Developer）、BI 报表摘要（Q in QuickSight）</td>
+<td>28</td>
+</tr>
+<tr>
+<td><strong>Amazon A2I</strong></td>
+<td>人工审核 ML 预测</td>
+<td>低置信度预测交给人工审核</td>
+<td>5</td>
+</tr>
+</tbody>
+</table>
+<h3>🔑 AI 服务速记口诀</h3>
+<blockquote>
+<p><strong>看图</strong>用 Rekognition，<strong>读文</strong>用 Textract，<strong>懂话</strong>用 Comprehend<strong>听声</strong>用 Transcribe，<strong>发声</strong>用 Polly，<strong>翻译</strong>用 Translate<strong>聊天框架</strong>用 Lex，<strong>搜文档</strong>用 Kendra，<strong>推荐</strong>用 Personalize<strong>写代码</strong>用 Q Developer，<strong>做报表</strong>用 Q + QuickSight<strong>人工复查</strong>用 A2I</p>
+</blockquote>
+<hr />
+<h2>🟡 第四梯队：安全/基础设施（考题占比 ~10%）</h2>
+<p>这些不是 AI 工具，但在 AI 考题中<strong>必考安全合规场景</strong>。</p>
+<table>
+<thead>
+<tr>
+<th>服务</th>
+<th>在 AI 考题中的角色</th>
+<th>频次</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>AWS IAM</strong></td>
+<td>控制谁能访问哪些模型/数据。<strong>最小权限原则</strong>是高频考点</td>
+<td>14</td>
+</tr>
+<tr>
+<td><strong>AWS CloudTrail</strong></td>
+<td>记录所有 API 调用日志。审计"谁在什么时候调了什么模型"</td>
+<td>16</td>
+</tr>
+<tr>
+<td><strong>Amazon CloudWatch</strong></td>
+<td>监控指标 + 告警。如端点延迟、Guardrails 违规告警</td>
+<td>12</td>
+</tr>
+<tr>
+<td><strong>Amazon Macie</strong></td>
+<td>自动扫描 S3 中的敏感数据 (PII)。用于发现训练数据中的隐私风险</td>
+<td>15</td>
+</tr>
+<tr>
+<td><strong>AWS KMS</strong></td>
+<td>加密密钥管理。加密模型工件和训练数据</td>
+<td>5</td>
+</tr>
+<tr>
+<td><strong>Amazon VPC / PrivateLink</strong></td>
+<td>网络隔离。让模型在私有网络中运行，数据不经过公网</td>
+<td>8</td>
+</tr>
+<tr>
+<td><strong>Amazon S3</strong></td>
+<td>存储训练数据、模型工件、日志</td>
+<td>16</td>
+</tr>
+<tr>
+<td><strong>Amazon OpenSearch</strong></td>
+<td>向量数据库，存储嵌入向量用于 RAG 的语义搜索</td>
+<td>8</td>
+</tr>
+</tbody>
+</table>
+<h3>🔒 安全四件套（几乎必考）</h3>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>用什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>谁能访问模型？</td>
+<td><strong>IAM</strong> (最小权限)</td>
+</tr>
+<tr>
+<td>数据里有没有隐私？</td>
+<td><strong>Macie</strong> (发现PII)</td>
+</tr>
+<tr>
+<td>谁调了我的模型？</td>
+<td><strong>CloudTrail</strong> (API日志)</td>
+</tr>
+<tr>
+<td>模型输出安全吗？</td>
+<td><strong>Guardrails</strong> (内容过滤)</td>
+</tr>
+<tr>
+<td>数据加密了吗？</td>
+<td><strong>KMS</strong> (密钥管理)</td>
+</tr>
+<tr>
+<td>数据不能出公网？</td>
+<td><strong>VPC 端点</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>🟢 Amazon Nova 和 Amazon Titan（AWS 自研模型）</h2>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>定位</th>
+<th>考点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Amazon Titan</strong></td>
+<td>AWS 自研基础模型系列（文本、嵌入、图像）</td>
+<td>Titan Embeddings 用于 RAG 向量化</td>
+</tr>
+<tr>
+<td><strong>Amazon Nova Micro</strong></td>
+<td>纯文本，最便宜</td>
+<td>成本敏感的文本任务</td>
+</tr>
+<tr>
+<td><strong>Amazon Nova Lite</strong></td>
+<td>多模态（文本+图像+视频），低成本</td>
+<td>性价比最高的多模态</td>
+</tr>
+<tr>
+<td><strong>Amazon Nova Pro</strong></td>
+<td>多模态，高性能，<strong>可微调</strong></td>
+<td>需要微调的多模态任务</td>
+</tr>
+<tr>
+<td><strong>Amazon Nova Canvas</strong></td>
+<td>图像生成</td>
+<td>用 negative prompt 排除特征</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1>第二部分：AI/ML 核心概念</h1>
+<hr />
+<h2>A. 机器学习三大范式</h2>
+<table>
+<thead>
+<tr>
+<th>范式</th>
+<th>定义</th>
+<th>数据要求</th>
+<th>典型应用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>监督学习</strong></td>
+<td>用<strong>带标签</strong>的数据训练</td>
+<td>需要大量标注数据</td>
+<td>分类（垃圾邮件检测）、回归（房价预测）</td>
+</tr>
+<tr>
+<td><strong>无监督学习</strong></td>
+<td>用<strong>无标签</strong>的数据，发现隐藏模式</td>
+<td>不需要标注</td>
+<td>聚类（客户分群）、异常检测、降维</td>
+</tr>
+<tr>
+<td><strong>强化学习</strong></td>
+<td>通过<strong>试错和奖励</strong>学习最优策略</td>
+<td>环境反馈信号</td>
+<td>游戏AI、机器人、自动驾驶、DeepRacer</td>
+</tr>
+</tbody>
+</table>
+<p><strong>半监督学习</strong>: 少量标注 + 大量未标注 → 结合两者优势</p>
+<hr />
+<h2>B. 模型评估指标（高频！）</h2>
+<h3>分类任务指标</h3>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>公式</th>
+<th>什么时候用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>准确率 (Accuracy)</strong></td>
+<td>正确预测数 / 总数</td>
+<td>数据均衡时的总体表现</td>
+</tr>
+<tr>
+<td><strong>精确率 (Precision)</strong></td>
+<td>TP / (TP+FP)</td>
+<td>关注"预测为正的里有多少真的是正"（如垃圾邮件检测：减少误判正常邮件）</td>
+</tr>
+<tr>
+<td><strong>召回率 (Recall)</strong></td>
+<td>TP / (TP+FN)</td>
+<td>关注"真正为正的有多少被找到"（如癌症检测：不能漏诊）</td>
+</tr>
+<tr>
+<td><strong>F1 分数</strong></td>
+<td>精确率和召回率的调和平均</td>
+<td>需要平衡精确率和召回率</td>
+</tr>
+<tr>
+<td><strong>AUC-ROC</strong></td>
+<td>ROC 曲线下面积</td>
+<td>评估分类器在各阈值下的综合表现</td>
+</tr>
+</tbody>
+</table>
+<h3>回归任务指标</h3>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>RMSE (均方根误差)</strong></td>
+<td>预测值与真实值的平均偏差，越小越好</td>
+</tr>
+<tr>
+<td><strong>R² (决定系数)</strong></td>
+<td>模型解释了多少数据变异，越接近 1 越好</td>
+</tr>
+</tbody>
+</table>
+<h3>混淆矩阵</h3>
+<pre><code>                  预测为正    预测为负
+实际为正          TP (真正)   FN (漏报)
+实际为负          FP (误报)   TN (真负)
+
+</code></pre>
+<hr />
+<h2>C. 过拟合 vs 欠拟合</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>过拟合 (Overfitting)</th>
+<th>欠拟合 (Underfitting)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>症状</strong></td>
+<td>训练集表现好，测试集表现差</td>
+<td>训练集和测试集表现都差</td>
+</tr>
+<tr>
+<td><strong>原因</strong></td>
+<td>模型太复杂，"背答案"了</td>
+<td>模型太简单，学不到规律</td>
+</tr>
+<tr>
+<td><strong>解决</strong></td>
+<td>增加数据、正则化、Dropout、早停、交叉验证</td>
+<td>增加模型复杂度、增加特征、减少正则化</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>D. 微调 vs RAG vs Prompt Engineering（最高频对比！）</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Prompt Engineering</th>
+<th>RAG</th>
+<th>Fine-tuning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>原理</strong></td>
+<td>只改输入提示词</td>
+<td>检索外部文档注入上下文</td>
+<td>修改模型参数</td>
+</tr>
+<tr>
+<td><strong>成本</strong></td>
+<td>💰 最低</td>
+<td>💰💰 中等</td>
+<td>💰💰💰 最高</td>
+</tr>
+<tr>
+<td><strong>适用场景</strong></td>
+<td>控制输出格式/语言/风格</td>
+<td>需要最新/私有数据</td>
+<td>需要领域专业术语/改变模型行为</td>
+</tr>
+<tr>
+<td><strong>数据需求</strong></td>
+<td>不需要</td>
+<td>需要文档库</td>
+<td>需要高质量标注数据</td>
+</tr>
+<tr>
+<td><strong>知识更新</strong></td>
+<td>即时</td>
+<td>更新文档即可</td>
+<td>需要重新训练</td>
+</tr>
+<tr>
+<td><strong>减少幻觉</strong></td>
+<td>❌ 有限</td>
+<td>✅ 有效（基于真实文档）</td>
+<td>⚠️ 一定程度</td>
+</tr>
+</tbody>
+</table>
+<h3>🎯 考试决策树</h3>
+<pre><code>问: 需要改进 FM 表现？
+├── 只需控制输出长度/语言/风格？ → Prompt Engineering
+├── 需要引用最新/私有数据？ → RAG
+├── 数据频繁变化？ → RAG
+├── 需要理解专业领域术语？ → Fine-tuning
+├── 成本敏感？ → Prompt → RAG → Fine-tuning（按成本递增尝试）
+└── 改变模型的核心行为？ → Fine-tuning
+
+</code></pre>
+<p><strong>成本效益排序（考试必记）</strong>: Prompt Engineering &gt; RAG &gt; Fine-tuning</p>
+<hr />
+<h2>E. Prompt Engineering 技术</h2>
+<table>
+<thead>
+<tr>
+<th>技术</th>
+<th>说明</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>零样本 (Zero-shot)</strong></td>
+<td>不给示例，直接提问</td>
+<td>"把以下文本翻译成英文：..."</td>
+</tr>
+<tr>
+<td><strong>少样本 (Few-shot)</strong></td>
+<td>给几个示例让模型学习格式</td>
+<td>"情感: 正面。评价: 很棒... / 情感: 负面。评价: 太差..."</td>
+</tr>
+<tr>
+<td><strong>思维链 (Chain-of-Thought)</strong></td>
+<td>引导模型逐步推理</td>
+<td>"请一步一步思考这个问题..."</td>
+</tr>
+<tr>
+<td><strong>系统提示 (System Prompt)</strong></td>
+<td>设定模型的角色和行为规则</td>
+<td>"你是一个专业的法律顾问，只用中文回答"</td>
+</tr>
+<tr>
+<td><strong>上下文学习 (In-context Learning)</strong></td>
+<td>在提示中提供背景信息</td>
+<td>把相关文档内容塞进提示</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>F. LLM 推理参数</h2>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>作用</th>
+<th>值低</th>
+<th>值高</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Temperature (温度)</strong></td>
+<td>控制输出随机性</td>
+<td>确定性高、重复性高（适合事实问答）</td>
+<td>创造性高、多样性高（适合写诗/故事）</td>
+</tr>
+<tr>
+<td><strong>Top-K</strong></td>
+<td>只从概率最高的 K 个词中采样</td>
+<td>更聚焦、更确定</td>
+<td>更多样</td>
+</tr>
+<tr>
+<td><strong>Top-P (nucleus)</strong></td>
+<td>只从累计概率达 P 的词中采样</td>
+<td>更聚焦</td>
+<td>更多样</td>
+</tr>
+<tr>
+<td><strong>Max Tokens</strong></td>
+<td>限制输出长度</td>
+<td>短回复</td>
+<td>长回复</td>
+</tr>
+</tbody>
+</table>
+<p><strong>记忆技巧</strong>: 温度低 = 冷静理性 = 确定性答案; 温度高 = 热情奔放 = 创意发散</p>
+<hr />
+<h2>G. 嵌入 (Embedding) 与向量数据库</h2>
+<p><strong>嵌入</strong>: 把文本/图片转换成<strong>数学向量（一串数字）</strong>，语义相近的内容在向量空间中距离更近。</p>
+<p><strong>用途</strong>:</p>
+<ul>
+<li>RAG 中把文档向量化并存入向量数据库</li>
+<li>语义搜索：找"意思相近"而非"关键词匹配"的内容</li>
+<li>推荐系统：找相似物品</li>
+</ul>
+<p><strong>向量数据库</strong>: 存储和检索嵌入向量的专用数据库→ AWS 上用 <strong>Amazon OpenSearch</strong> 的向量搜索功能</p>
+<hr />
+<h2>H. 幻觉 (Hallucination)</h2>
+<p><strong>是什么</strong>: FM 生成听起来合理但<strong>实际错误或编造</strong>的内容。</p>
+<p><strong>缓解方法</strong>:</p>
+<ol>
+<li><strong>RAG</strong> — 让模型基于真实文档回答（最有效）</li>
+<li><strong>Guardrails 接地检查 (Grounding Check)</strong> — 验证输出是否基于参考资料</li>
+<li><strong>Prompt Engineering</strong> — 指示模型"只根据提供的信息回答，不确定时说不知道"</li>
+<li><strong>降低温度</strong> — 减少随机性</li>
+<li><strong>人工审核 (A2I)</strong> — 关键输出交给人检查</li>
+</ol>
+<hr />
+<h2>I. 偏差 (Bias) 与公平性</h2>
+<p><strong>数据偏差来源</strong>:</p>
+<ul>
+<li>训练数据不均衡（某类样本过多/过少）</li>
+<li>历史数据本身反映了社会偏见</li>
+<li>采样偏差（只收集了特定人群的数据）</li>
+</ul>
+<p><strong>检测</strong>: <strong>SageMaker Clarify</strong> → 训练前数据偏差检测 + 训练后模型偏差检测</p>
+<p><strong>缓解</strong>:</p>
+<ul>
+<li>使用多样化、平衡的训练数据</li>
+<li>数据增强 (Data Augmentation)</li>
+<li>Clarify 持续监控</li>
+<li>人工在环 (Human-in-the-loop) 审核</li>
+</ul>
+<hr />
+<h2>J. 负责任的 AI 框架</h2>
+<p>考试常考的<strong>负责任 AI 六大支柱</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>支柱</th>
+<th>含义</th>
+<th>AWS 工具</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>公平性 (Fairness)</strong></td>
+<td>模型不歧视特定群体</td>
+<td>Clarify</td>
+</tr>
+<tr>
+<td><strong>可解释性 (Explainability)</strong></td>
+<td>能解释模型决策原因</td>
+<td>Clarify (SHAP)</td>
+</tr>
+<tr>
+<td><strong>透明度 (Transparency)</strong></td>
+<td>公开模型的能力和限制</td>
+<td>Model Cards</td>
+</tr>
+<tr>
+<td><strong>隐私与安全</strong></td>
+<td>保护个人数据</td>
+<td>Macie, KMS, Guardrails</td>
+</tr>
+<tr>
+<td><strong>可控性 (Controllability)</strong></td>
+<td>人类能监督和干预</td>
+<td>A2I, Guardrails</td>
+</tr>
+<tr>
+<td><strong>治理 (Governance)</strong></td>
+<td>有政策、流程、合规保障</td>
+<td>CloudTrail, IAM</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>K. 数据处理关键概念</h2>
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>特征工程</strong></td>
+<td>从原始数据中提取/构造对模型有用的变量</td>
+</tr>
+<tr>
+<td><strong>数据增强</strong></td>
+<td>通过变换（旋转、翻转、噪声）扩充训练数据</td>
+</tr>
+<tr>
+<td><strong>合成数据</strong></td>
+<td>用算法生成的人工数据（GAN可生成）</td>
+</tr>
+<tr>
+<td><strong>数据拆分</strong></td>
+<td>训练集(~70%) + 验证集(~15%) + 测试集(~15%)</td>
+</tr>
+<tr>
+<td><strong>标注 (Labeling)</strong></td>
+<td>为数据打标签（Ground Truth）</td>
+</tr>
+<tr>
+<td><strong>数据漂移</strong></td>
+<td>生产数据分布偏离训练数据 → Model Monitor 检测</td>
+</tr>
+<tr>
+<td><strong>特征存储</strong></td>
+<td>统一管理和复用特征变量 → Feature Store</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>L. 模型优化与部署</h2>
+<table>
+<thead>
+<tr>
+<th>技术</th>
+<th>说明</th>
+<th>效果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>模型蒸馏 (Distillation)</strong></td>
+<td>大模型教小模型</td>
+<td>保持性能，减小体积</td>
+</tr>
+<tr>
+<td><strong>模型量化 (Quantization)</strong></td>
+<td>降低数值精度（如 FP32→INT8）</td>
+<td>减少内存，加速推理</td>
+</tr>
+<tr>
+<td><strong>迁移学习</strong></td>
+<td>复用预训练模型到新任务</td>
+<td>减少训练数据和时间</td>
+</tr>
+<tr>
+<td><strong>RLHF</strong></td>
+<td>用人类反馈微调模型对齐人类偏好</td>
+<td>提升对话质量</td>
+</tr>
+<tr>
+<td><strong>持续预训练</strong></td>
+<td>用领域数据继续训练基础模型</td>
+<td>让模型学习领域知识</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1>第三部分：场景→工具 决策树</h1>
+<blockquote>
+<p>考试的核心就是"给一个场景，选对工具"。以下是按场景分类的速查表。</p>
+</blockquote>
+<h2>📖 文本/语言类场景</h2>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>选什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>构建聊天机器人/对话系统</td>
+<td><strong>Bedrock</strong> (通用) 或 <strong>Lex</strong> (对话框架)</td>
+</tr>
+<tr>
+<td>文本情感分析</td>
+<td><strong>Comprehend</strong> 或 <strong>Bedrock FM</strong></td>
+</tr>
+<tr>
+<td>文档摘要生成</td>
+<td><strong>Bedrock FM</strong></td>
+</tr>
+<tr>
+<td>文本翻译</td>
+<td><strong>Translate</strong></td>
+</tr>
+<tr>
+<td>实体识别/关键词提取</td>
+<td><strong>Comprehend</strong></td>
+</tr>
+<tr>
+<td>毒性/有害语言检测</td>
+<td><strong>Comprehend</strong> 或 <strong>Guardrails</strong></td>
+</tr>
+</tbody>
+</table>
+<h2>🖼️ 图像/视频类场景</h2>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>选什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>图像中检测物体/人脸</td>
+<td><strong>Rekognition</strong></td>
+</tr>
+<tr>
+<td>图片内容审核</td>
+<td><strong>Rekognition</strong></td>
+</tr>
+<tr>
+<td>从 PDF/发票提取文字和表格</td>
+<td><strong>Textract</strong></td>
+</tr>
+<tr>
+<td>AI 生成图片</td>
+<td><strong>Bedrock + Nova Canvas</strong></td>
+</tr>
+<tr>
+<td>自定义图片分类</td>
+<td><strong>Rekognition Custom Labels</strong></td>
+</tr>
+</tbody>
+</table>
+<h2>🔊 语音类场景</h2>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>选什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>语音转文字/字幕</td>
+<td><strong>Transcribe</strong></td>
+</tr>
+<tr>
+<td>文字转语音/旁白</td>
+<td><strong>Polly</strong></td>
+</tr>
+</tbody>
+</table>
+<h2>📊 数据/预测类场景</h2>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>选什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>个性化产品推荐</td>
+<td><strong>Personalize</strong></td>
+</tr>
+<tr>
+<td>时间序列预测</td>
+<td><strong>Forecast</strong></td>
+</tr>
+<tr>
+<td>欺诈检测</td>
+<td><strong>Fraud Detector</strong></td>
+</tr>
+<tr>
+<td>企业搜索</td>
+<td><strong>Kendra</strong></td>
+</tr>
+<tr>
+<td>BI 报表 + AI 摘要</td>
+<td><strong>QuickSight + Q</strong></td>
+</tr>
+<tr>
+<td>向量搜索/语义搜索</td>
+<td><strong>OpenSearch</strong></td>
+</tr>
+</tbody>
+</table>
+<h2>🔒 安全/合规类场景</h2>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>选什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>控制谁能调用模型</td>
+<td><strong>IAM</strong></td>
+</tr>
+<tr>
+<td>发现 S3 中的敏感数据</td>
+<td><strong>Macie</strong></td>
+</tr>
+<tr>
+<td>审计 API 调用</td>
+<td><strong>CloudTrail</strong></td>
+</tr>
+<tr>
+<td>过滤有害/PII 内容</td>
+<td><strong>Guardrails</strong></td>
+</tr>
+<tr>
+<td>加密数据/模型</td>
+<td><strong>KMS</strong></td>
+</tr>
+<tr>
+<td>私有网络部署</td>
+<td><strong>VPC 端点 / PrivateLink</strong></td>
+</tr>
+<tr>
+<td>监控模型性能</td>
+<td><strong>CloudWatch</strong></td>
+</tr>
+<tr>
+<td>模型审计文档</td>
+<td><strong>Model Cards</strong></td>
+</tr>
+</tbody>
+</table>
+<h2>🔧 ML 工程类场景</h2>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>选什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>数据标注</td>
+<td><strong>Ground Truth</strong></td>
+</tr>
+<tr>
+<td>偏差检测 + 可解释性</td>
+<td><strong>Clarify</strong></td>
+</tr>
+<tr>
+<td>无代码建模</td>
+<td><strong>Canvas</strong></td>
+</tr>
+<tr>
+<td>快速部署开源 FM</td>
+<td><strong>JumpStart</strong></td>
+</tr>
+<tr>
+<td>自动化 ML 流水线</td>
+<td><strong>Pipelines</strong></td>
+</tr>
+<tr>
+<td>监控数据漂移</td>
+<td><strong>Model Monitor</strong></td>
+</tr>
+<tr>
+<td>人工审核 ML 预测</td>
+<td><strong>A2I</strong></td>
+</tr>
+<tr>
+<td>特征管理</td>
+<td><strong>Feature Store</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1>第四部分：易混淆对比</h1>
+<h2>🆚 Bedrock vs SageMaker</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Bedrock</th>
+<th>SageMaker</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>定位</strong></td>
+<td>调用现成大模型 (FM)</td>
+<td>端到端自建 ML 模型</td>
+</tr>
+<tr>
+<td><strong>用户</strong></td>
+<td>应用开发者</td>
+<td>数据科学家/ML工程师</td>
+</tr>
+<tr>
+<td><strong>训练</strong></td>
+<td>微调他人的 FM</td>
+<td>从头训练或自定义模型</td>
+</tr>
+<tr>
+<td><strong>部署</strong></td>
+<td>API 调用即可</td>
+<td>需要配置端点</td>
+</tr>
+</tbody>
+</table>
+<h2>🆚 Guardrails vs Comprehend vs Macie</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Guardrails</th>
+<th>Comprehend</th>
+<th>Macie</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>过滤对象</strong></td>
+<td>FM 的输入/输出</td>
+<td>任意文本</td>
+<td>S3 中的文件</td>
+</tr>
+<tr>
+<td><strong>用途</strong></td>
+<td>内容安全+PII屏蔽</td>
+<td>NLP分析(情感/实体)</td>
+<td>发现敏感数据</td>
+</tr>
+<tr>
+<td><strong>场景</strong></td>
+<td>实时拦截</td>
+<td>离线分析</td>
+<td>数据治理</td>
+</tr>
+</tbody>
+</table>
+<h2>🆚 Kendra vs OpenSearch vs Knowledge Bases</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Kendra</th>
+<th>OpenSearch</th>
+<th>Knowledge Bases</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>搜索类型</strong></td>
+<td>企业文档搜索</td>
+<td>向量搜索</td>
+<td>RAG 检索</td>
+</tr>
+<tr>
+<td><strong>独立使用</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>❌ (依赖 Bedrock)</td>
+</tr>
+<tr>
+<td><strong>与 FM 结合</strong></td>
+<td>可以但需额外集成</td>
+<td>作为向量数据库后端</td>
+<td>原生集成 Bedrock FM</td>
+</tr>
+</tbody>
+</table>
+<h2>🆚 Ground Truth vs A2I</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Ground Truth</th>
+<th>A2I</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>时机</strong></td>
+<td>训练前（标注数据）</td>
+<td>推理后（审核预测）</td>
+</tr>
+<tr>
+<td><strong>目的</strong></td>
+<td>给数据打标签</td>
+<td>对低置信度预测人工复查</td>
+</tr>
+</tbody>
+</table>
+<h2>🆚 CloudTrail vs CloudWatch</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>CloudTrail</th>
+<th>CloudWatch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>记录什么</strong></td>
+<td>谁做了什么（API 调用日志）</td>
+<td>系统表现如何（指标/日志）</td>
+</tr>
+<tr>
+<td><strong>用途</strong></td>
+<td>安全审计</td>
+<td>性能监控+告警</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1>第五部分：考前速记清单</h1>
+<h2>✅ 10 个必记结论</h2>
+<ol>
+<li><strong>成本优先级</strong>: Prompt Engineering &lt; RAG &lt; Fine-tuning</li>
+<li><strong>减少幻觉</strong>: RAG 是最有效手段</li>
+<li><strong>偏差检测</strong>: 用 Clarify</li>
+<li><strong>内容过滤</strong>: 用 Guardrails</li>
+<li><strong>PII 发现</strong>: S3 里用 Macie，FM 输出用 Guardrails</li>
+<li><strong>审计日志</strong>: 用 CloudTrail</li>
+<li><strong>无代码 ML</strong>: 用 Canvas</li>
+<li><strong>数据标注</strong>: 用 Ground Truth</li>
+<li><strong>私有部署</strong>: VPC 端点</li>
+<li><strong>模型记录</strong>: Model Cards</li>
+</ol>
+<h2>✅ 5 个易错陷阱</h2>
+<ol>
+<li><strong>Rekognition 常做干扰项</strong> — 图像分析用它，但不能做文本分析</li>
+<li><strong>Lex 不等于聊天机器人</strong> — Lex 是对话框架，不含 LLM 能力</li>
+<li><strong>微调不是万能的</strong> — 知识更新快的场景优先用 RAG</li>
+<li><strong>温度高 ≠ 更好</strong> — 事实问答要低温度</li>
+<li><strong>Clarify 不只检测偏差</strong> — 它也做可解释性分析（SHAP值）</li>
+</ol>
+</div>
+</body>
+</html>

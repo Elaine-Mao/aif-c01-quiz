@@ -1,5 +1,5 @@
 // Offline cache for the AIF-C01 study app (PWA)
-var CACHE_NAME = "aif-app-cache-v1";
+var CACHE_NAME = "aif-app-cache-v2";
 var ASSETS = [
   "./index.html",
   "./style.css",
@@ -7,7 +7,9 @@ var ASSETS = [
   "./questions-data.js",
   "./manifest.json",
   "./icon-192.png",
-  "./icon-512.png"
+  "./icon-512.png",
+  "./guide.html",
+  "./practice.html"
 ];
 
 self.addEventListener("install", function (event) {

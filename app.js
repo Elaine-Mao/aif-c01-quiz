@@ -477,8 +477,9 @@
     elTopTitle.textContent = VIEW_TITLES[top.view] || "AIF-C01 刷题";
     elBtnBack.hidden = viewStack.length <= 1;
     // Update bottom nav active state
-    var navMap = { home:"home", "study-setup":"study", study:"study", "seq-study":"study",
-      "topic-list":"study", "topic-study":"study", "quiz-setup":"quiz", quiz:"quiz",
+    var navMap = { home:"home", "study-setup":"home", study:"home", "seq-study":"home",
+      "topic-list":"topic", "topic-study":"topic", "seq-study":"home",
+      "quiz-setup":"quiz", quiz:"quiz",
       "quiz-result":"quiz", wrongbook:"wrongbook", "wrongbook-review":"wrongbook" };
     var activeNav = navMap[top.view] || "home";
     elBottomNav.querySelectorAll(".nav-btn").forEach(function (btn) {
@@ -529,10 +530,13 @@
       '</div></div>';
 
     html += '<div class="section-title">学习模式</div>';
-    html += actionCard("orange", "&#128218;", "背题模式", "逐题浏览题干、选项与解析", "go-study");
-    html += actionCard("navy", "&#127991;&#65039;", "按知识点刷题", "13 个分类，针对性练习", "go-topic");
+    html += actionCard("orange", "&#127991;&#65039;", "按知识点刷题", "13 个分类，针对性练习", "go-topic");
     html += actionCard("navy", "&#9998;", "测试模式", "互动答题，即时反馈", "go-quiz");
     html += actionCard("red", "&#9888;", "错题本", wrongCount + " 道错题待复习", "go-wrongbook");
+
+    html += '<div class="section-title">学习资料</div>';
+    html += actionCard("orange", "&#128214;", "备考指南", "44个AWS工具 + 核心概念速查", "go-guide");
+    html += actionCard("orange", "&#128161;", "实战备考", "真题解析 + 解题套路 + 考前速记", "go-practice");
 
     html += '<div class="section-title">数据管理</div>';
     html += actionCard("navy", "&#128190;", "导出进度", "保存错题本和答题记录到文件", "go-export");
@@ -543,11 +547,6 @@
     elApp.querySelector('[data-action="go-seq"]').addEventListener("click", function () {
       navigate("seq-study", { index: seqIdx });
     });
-    elApp.querySelector('[data-action="go-study"]').addEventListener("click", function () {
-      var resume = tryResumeStudy();
-      if (resume) navigate("study", resume);
-      else navigate("study-setup");
-    });
     elApp.querySelector('[data-action="go-topic"]').addEventListener("click", function () {
       navigate("topic-list");
     });
@@ -556,6 +555,12 @@
     });
     elApp.querySelector('[data-action="go-wrongbook"]').addEventListener("click", function () {
       navigate("wrongbook");
+    });
+    elApp.querySelector('[data-action="go-guide"]').addEventListener("click", function () {
+      window.open("guide.html", "_self");
+    });
+    elApp.querySelector('[data-action="go-practice"]').addEventListener("click", function () {
+      window.open("practice.html", "_self");
     });
     elApp.querySelector('[data-action="go-export"]').addEventListener("click", exportProgress);
     elApp.querySelector('[data-action="go-import"]').addEventListener("click", importProgress);
@@ -1323,10 +1328,8 @@
     btn.addEventListener("click", function () {
       var view = btn.dataset.view;
       if (view === "home") goHome();
-      else if (view === "study") {
-        var resume = tryResumeStudy();
-        if (resume) { viewStack = [{ view: "home", opts: {} }]; navigate("study", resume); }
-        else { viewStack = [{ view: "home", opts: {} }]; navigate("study-setup"); }
+      else if (view === "topic") {
+        viewStack = [{ view: "home", opts: {} }]; navigate("topic-list");
       }
       else if (view === "quiz") { viewStack = [{ view: "home", opts: {} }]; navigate("quiz-setup"); }
       else if (view === "wrongbook") { viewStack = [{ view: "home", opts: {} }]; navigate("wrongbook"); }
