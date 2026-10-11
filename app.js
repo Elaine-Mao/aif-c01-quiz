@@ -709,11 +709,19 @@
       var tpKey = "tp_" + i;
       var tpProgress = state.topicProgress[tpKey] || 0;
       var pct = count > 0 ? Math.round(tpProgress / count * 100) : 0;
+      // Calculate accuracy for this topic
+      var attempted = 0, correct = 0;
+      ids.forEach(function (id) {
+        var p = state.progress[id];
+        if (p && p.attempted) { attempted++; if (p.correct) correct++; }
+      });
+      var accPct = attempted > 0 ? Math.round(correct / attempted * 100) : 0;
+      var accText = attempted > 0 ? " · 正确率 " + accPct + "%" : "";
       html += '<div class="topic-card" data-topic="' + i + '">' +
         '<div class="topic-icon">' + allTopicIcons[i] + '</div>' +
         '<div class="topic-body">' +
         '<div class="topic-name">' + escapeHtml(allTopicNames[i]) + '</div>' +
-        '<div class="topic-count">' + count + ' 题 · 已看 ' + tpProgress + ' 题 (' + pct + '%)</div>' +
+        '<div class="topic-count">' + count + ' 题 · 已答 ' + attempted + '/' + count + accText + '</div>' +
         '<div class="topic-progress-bar"><div class="topic-progress-fill' + (pct >= 100 ? " done" : "") + '" style="width:' + Math.min(pct, 100) + '%"></div></div>' +
         '</div><div class="chev">&#8250;</div></div>';
     }
@@ -767,7 +775,15 @@
     var inWrongBook = isInWrongBook(q.id);
 
     var html = "";
-    html += '<div class="q-progress"><span>' + escapeHtml(topicName) + ' · 第 ' + (index + 1) + ' / ' + ids.length + ' 题</span>' +
+    // Calculate real-time accuracy for this topic
+    var tAttempted = 0, tCorrect = 0;
+    ids.forEach(function (tid) {
+      var p = state.progress[tid];
+      if (p && p.attempted) { tAttempted++; if (p.correct) tCorrect++; }
+    });
+    var tAccPct = tAttempted > 0 ? Math.round(tCorrect / tAttempted * 100) : 0;
+    var tAccText = tAttempted > 0 ? " · 正确率 " + tAccPct + "%" : "";
+    html += '<div class="q-progress"><span>' + escapeHtml(topicName) + ' · 第 ' + (index + 1) + ' / ' + ids.length + ' 题' + tAccText + '</span>' +
       '<span>Q' + displayQNum(q) + '</span></div>';
 
     html += '<div class="q-card">';
@@ -988,7 +1004,17 @@
   // ---- Quiz setup ----
   function renderQuizSetup() {
     var resumeNum = state.quizSeqCursor || 1;
-    var html = '<div class="section-title">测试设置</div>';
+    var html = "";
+
+    // 真题模拟考试 banner (like v4)
+    html += '<div class="section-title">模拟考试</div>';
+    html += '<div class="action-card" data-action="go-mock">' +
+      '<div class="ic navy" style="font-size:16px">📝</div>' +
+      '<div class="body"><div class="title" style="font-weight:700">真题模拟考试</div>' +
+      '<div class="desc">随机65题模拟真实考试 · 58单选+5多选+2其他 · 及格线70%</div></div>' +
+      '<div class="chev">&#8250;</div></div>';
+
+    html += '<div class="section-title">自定义测试</div>';
     html += '<div class="setup-group">' +
       setupRow("题目范围", "", chipGroup("quiz-scope", [["all", "全部题库"], ["custom", "自定义数量"]], "all")) +
       setupRow("题目数量", "范围: 5-" + TOTAL, '<input type="number" id="quiz-count" class="num-input" min="5" max="' + TOTAL + '" value="20" />') +
@@ -997,7 +1023,7 @@
       '<div class="sub">顺序模式将从此题号接续开始</div></div>' +
       '<input type="number" id="quiz-seq-start" class="num-input" min="1" max="' + TOTAL + '" value="' + resumeNum + '" /></div>' +
       '</div>';
-    html += '<button class="btn-primary" id="btn-start-quiz">开始测试</button>';
+    html += '<button class="btn-primary" id="btn-start-quiz">开始自定义测试</button>';
 
     elApp.innerHTML = html;
     bindChipGroups(elApp);
@@ -1016,6 +1042,18 @@
     });
     seqStartRow.style.display = "none";
 
+    // Mock exam button
+    elApp.querySelector('[data-action="go-mock"]').addEventListener("click", function () {
+      // Pick 58 single + 5 multiple + 2 other (matching/ordering/hotspot)
+      var singles = shuffle(QUESTIONS.filter(function (q) { return isChoiceType(q) && q.correct.length <= 1; })).slice(0, 58);
+      var multis = shuffle(QUESTIONS.filter(function (q) { return isChoiceType(q) && q.correct.length > 1; })).slice(0, 5);
+      var others = shuffle(QUESTIONS.filter(function (q) { return isMatchingType(q) || isOrderingType(q); })).slice(0, 2);
+      var mockIds = shuffle(singles.concat(multis).concat(others)).map(function (q) { return q.id; });
+      var quizState = mockIds.map(function (id) { return { id: id, userAnswer: null, submitted: false }; });
+      navigate("quiz", { quizState: quizState, index: 0, isMock: true });
+    });
+
+    // Custom quiz button
     elApp.querySelector("#btn-start-quiz").addEventListener("click", function () {
       var scope = getChipValue(elApp, "quiz-scope");
       var order = getChipValue(elApp, "quiz-order");
@@ -1041,7 +1079,6 @@
         return { id: id, userAnswer: null, submitted: false };
       });
 
-      // Save cursor for next sequential quiz
       if (isSeq && ids.length > 0) {
         var lastId = ids[ids.length - 1];
         state.quizSeqCursor = Math.min(lastId + 1, TOTAL);
@@ -1051,7 +1088,6 @@
       navigate("quiz", { quizState: quizState, index: 0 });
     });
   }
-
   // ---- Quiz ----
   function renderQuiz(opts) {
     var quizState = opts.quizState;
@@ -1060,9 +1096,24 @@
     var q = questionById(qs.id);
     var total = quizState.length;
 
+    // Calculate real-time stats
+    var submittedCount = 0, correctCount = 0;
+    quizState.forEach(function (s) {
+      if (s.submitted) {
+        submittedCount++;
+        var sq = questionById(s.id);
+        if (isAnswerCorrect(sq, s.userAnswer)) correctCount++;
+      }
+    });
+    var pct = submittedCount > 0 ? Math.round(correctCount / submittedCount * 100) : 0;
+    var progressPct = Math.round(submittedCount / total * 100);
+
     var html = "";
-    html += '<div class="q-progress"><button class="q-progress-jump" id="btn-jump-progress">第 ' + (index + 1) + ' / ' + total + ' 题 &#9998;</button>' +
-      '<span>Q' + displayQNum(q) + '</span></div>';
+    // Progress bar with accuracy (like v4)
+    html += '<div class="quiz-progress-bar">';
+    html += '<div class="quiz-progress-info"><span>第 ' + (index + 1) + '/' + total + ' 题</span><span>正确率 ' + pct + '%</span></div>';
+    html += '<div class="quiz-bar-track"><div class="quiz-bar-fill" style="width:' + progressPct + '%"></div></div>';
+    html += '</div>';
 
     html += '<div class="q-card">';
     html += '<span class="q-num-badge">Q' + displayQNum(q) + '</span>';
@@ -1138,36 +1189,34 @@
       qs.submitted = true;
       var correct = isAnswerCorrect(q, qs.userAnswer);
       if (correct) markCorrect(q.id); else markWrong(q.id);
-      replaceView("quiz", { quizState: quizState, index: index });
+      replaceView("quiz", { quizState: quizState, index: index, isMock: opts.isMock });
     });
 
     // Nav
     elApp.querySelector("#btn-prev").addEventListener("click", function () {
-      if (index > 0) replaceView("quiz", { quizState: quizState, index: index - 1 });
+      if (index > 0) replaceView("quiz", { quizState: quizState, index: index - 1, isMock: opts.isMock });
     });
     var nextBtn = elApp.querySelector("#btn-next");
     if (nextBtn) nextBtn.addEventListener("click", function () {
-      if (index < total - 1) replaceView("quiz", { quizState: quizState, index: index + 1 });
+      if (index < total - 1) replaceView("quiz", { quizState: quizState, index: index + 1, isMock: opts.isMock });
     });
     var finishBtn = elApp.querySelector("#btn-finish");
     if (finishBtn) finishBtn.addEventListener("click", function () {
-      replaceView("quiz-result", { quizState: quizState });
+      replaceView("quiz-result", { quizState: quizState, isMock: opts.isMock });
     });
 
     // Jump
-    elApp.querySelector("#btn-jump-progress").addEventListener("click", function () {
+    elApp.querySelector(".quiz-progress-bar").addEventListener("click", function () {
       openJumpPanel(function (num) {
-        // Find quiz question with this id
         var newIndex = -1;
         for (var i = 0; i < quizState.length; i++) {
           if (quizState[i].id === num) { newIndex = i; break; }
         }
         if (newIndex === -1) { toast("当前测试中没有 Q" + num); return; }
-        replaceView("quiz", { quizState: quizState, index: newIndex });
+        replaceView("quiz", { quizState: quizState, index: newIndex, isMock: opts.isMock });
       });
     });
   }
-
   // ---- Quiz result ----
   function renderQuizResult(opts) {
     var quizState = opts.quizState;
