@@ -1290,7 +1290,7 @@
         var q = questionById(id);
         if (!q) return;
         var wc = (state.progress[id] || {}).wrongCount || 1;
-        var wcBadge = wc > 1 ? '<span class="wrong-count-badge">错' + wc + '次</span>' : '';
+        var wcBadge = '<span class="wrong-count-badge">错' + wc + '次</span>';
         html += '<div class="action-card wrong-item" data-id="' + id + '">' +
           '<div class="ic red" style="width:32px;height:32px;font-size:14px;border-radius:8px">Q' + displayQNum(q) + '</div>' +
           '<div class="body"><div class="desc">' + escapeHtml(q.stem.zh.substring(0, 45)) + '...' + wcBadge + '</div></div>' +
@@ -1346,7 +1346,7 @@
 
     var html = "";
     var rwc = (state.progress[q.id] || {}).wrongCount || 1;
-    var rwcText = rwc > 1 ? ' · 累计错' + rwc + '次' : '';
+    var rwcText = ' · 累计错' + rwc + '次';
     html += '<div class="q-progress"><span>第 ' + (index + 1) + ' / ' + ids.length + ' 题' + rwcText + '</span>' +
       '<span>Q' + displayQNum(q) + '</span></div>';
 
