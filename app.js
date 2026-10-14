@@ -91,13 +91,16 @@
 
   function markWrong(id) {
     if (state.wrongIds.indexOf(id) === -1) state.wrongIds.push(id);
-    state.progress[id] = { attempted: true, correct: false };
+    var prev = state.progress[id] || {};
+    var wc = (prev.wrongCount || 0) + 1;
+    state.progress[id] = { attempted: true, correct: false, wrongCount: wc };
     saveState();
   }
   function markCorrect(id) {
     var idx = state.wrongIds.indexOf(id);
     if (idx !== -1) state.wrongIds.splice(idx, 1);
-    state.progress[id] = { attempted: true, correct: true };
+    var prev = state.progress[id] || {};
+    state.progress[id] = { attempted: true, correct: true, wrongCount: prev.wrongCount || 0 };
     saveState();
   }
   function removeFromWrongBook(id) {
@@ -1276,13 +1279,21 @@
         '<div style="font-size:calc(16px * var(--font-scale));font-weight:600">错题本为空</div>' +
         '<div style="color:var(--text-muted);margin-top:4px">继续刷题，错题会自动收录</div></div>';
     } else {
+      // Sort by wrongCount descending (most-wrong first)
+      wrongIds.sort(function (a, b) {
+        var wa = (state.progress[a] || {}).wrongCount || 1;
+        var wb = (state.progress[b] || {}).wrongCount || 1;
+        return wb - wa;
+      });
       html += '<div class="section-title">' + wrongIds.length + ' 道错题</div>';
       wrongIds.forEach(function (id) {
         var q = questionById(id);
         if (!q) return;
+        var wc = (state.progress[id] || {}).wrongCount || 1;
+        var wcBadge = wc > 1 ? '<span class="wrong-count-badge">错' + wc + '次</span>' : '';
         html += '<div class="action-card wrong-item" data-id="' + id + '">' +
           '<div class="ic red" style="width:32px;height:32px;font-size:14px;border-radius:8px">Q' + displayQNum(q) + '</div>' +
-          '<div class="body"><div class="desc">' + escapeHtml(q.stem.zh.substring(0, 50)) + '...</div></div>' +
+          '<div class="body"><div class="desc">' + escapeHtml(q.stem.zh.substring(0, 45)) + '...' + wcBadge + '</div></div>' +
           '<div class="chev">&#8250;</div></div>';
       });
 
@@ -1334,7 +1345,9 @@
     var q = questionById(ids[index]);
 
     var html = "";
-    html += '<div class="q-progress"><span>第 ' + (index + 1) + ' / ' + ids.length + ' 题</span>' +
+    var rwc = (state.progress[q.id] || {}).wrongCount || 1;
+    var rwcText = rwc > 1 ? ' · 累计错' + rwc + '次' : '';
+    html += '<div class="q-progress"><span>第 ' + (index + 1) + ' / ' + ids.length + ' 题' + rwcText + '</span>' +
       '<span>Q' + displayQNum(q) + '</span></div>';
 
     html += '<div class="q-card">';
