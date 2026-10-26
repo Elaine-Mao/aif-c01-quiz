@@ -100,6 +100,14 @@
     saveState();
   }
   function clearActiveQuiz() { state.activeQuiz = null; saveState(); }
+
+  // ---- Unanswered questions (questions never submitted) ----
+  function unansweredIds() {
+    return QUESTIONS.filter(function (q) {
+      var p = state.progress[q.id];
+      return !(p && p.attempted);
+    }).map(function (q) { return q.id; });
+  }
   function activeQuizResumable() {
     var aq = state.activeQuiz;
     return !!(aq && aq.quizState && aq.quizState.length &&
@@ -114,7 +122,7 @@
     if (!activeQuizResumable()) return "";
     var aq = state.activeQuiz;
     var done = aq.quizState.filter(function (s) { return s.submitted; }).length;
-    var kindName = aq.kind === "wrong" ? "错题测试" : (aq.kind === "mock" ? "模拟考试" : "自定义测试");
+    var kindName = aq.kind === "wrong" ? "错题测试" : (aq.kind === "mock" ? "模拟考试" : (aq.kind === "unanswered" ? "未答题练习" : "自定义测试"));
     return '<div class="action-card" data-action="resume-quiz" style="border:1.5px solid var(--accent, #f90)">' +
       '<div class="ic navy" style="font-size:16px">&#9654;</div>' +
       '<div class="body"><div class="title" style="font-weight:700">继续上次测试</div>' +
@@ -1057,6 +1065,17 @@
       '<div class="desc">随机65题模拟真实考试 · 58单选+5多选+2其他 · 及格线70%</div></div>' +
       '<div class="chev">&#8250;</div></div>';
 
+    // 未答题练习入口（仅当存在未作答题目时显示）
+    var _unans = unansweredIds();
+    if (_unans.length > 0) {
+      html += '<div class="section-title">查漏补缺</div>';
+      html += '<div class="action-card" data-action="go-unanswered">' +
+        '<div class="ic red" style="font-size:16px">🧩</div>' +
+        '<div class="body"><div class="title" style="font-weight:700">未答题练习</div>' +
+        '<div class="desc">还有 ' + _unans.length + ' 道从未提交过答案的题，一键做完补齐进度</div></div>' +
+        '<div class="chev">&#8250;</div></div>';
+    }
+
     html += '<div class="section-title">自定义测试</div>';
     html += '<div class="setup-group">' +
       setupRow("题目范围", "", chipGroup("quiz-scope", [["all", "全部题库"], ["custom", "自定义数量"]], "all")) +
@@ -1086,6 +1105,17 @@
       seqStartRow.style.display = getChipValue(elApp, "quiz-order") === "seq" ? "" : "none";
     });
     seqStartRow.style.display = "none";
+
+    // 未答题练习 button
+    var _unansBtn = elApp.querySelector('[data-action="go-unanswered"]');
+    if (_unansBtn) _unansBtn.addEventListener("click", function () {
+      var ids = unansweredIds();
+      if (ids.length === 0) { toast("已全部作答，没有未答题"); return; }
+      var quizState = ids.map(function (id) {
+        return { id: id, userAnswer: null, submitted: false };
+      });
+      navigate("quiz", { quizState: quizState, index: 0, kind: "unanswered" });
+    });
 
     // Mock exam button
     elApp.querySelector('[data-action="go-mock"]').addEventListener("click", function () {
