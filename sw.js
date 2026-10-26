@@ -1,5 +1,5 @@
 // Offline cache for the AIF-C01 study app (PWA)
-var CACHE_NAME = "aif-app-cache-v8";
+var CACHE_NAME = "aif-app-cache-v9";
 var ASSETS = [
   "./index.html",
   "./style.css",

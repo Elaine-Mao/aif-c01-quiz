@@ -73,7 +73,8 @@
       studyProgress: null,
       quizSeqCursor: 1,
       seqProgress: { index: 0 },
-      topicProgress: {}
+      topicProgress: {},
+      activeQuiz: null
     };
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
@@ -87,6 +88,38 @@
 
   function saveState() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  // ---- Active quiz persistence (resume-after-exit) ----
+  function persistActiveQuiz(quizState, index, isMock, kind) {
+    state.activeQuiz = {
+      quizState: quizState, index: index,
+      isMock: !!isMock, kind: kind || (isMock ? "mock" : "custom"),
+      savedAt: Date.now()
+    };
+    saveState();
+  }
+  function clearActiveQuiz() { state.activeQuiz = null; saveState(); }
+  function activeQuizResumable() {
+    var aq = state.activeQuiz;
+    return !!(aq && aq.quizState && aq.quizState.length &&
+      aq.quizState.some(function (s) { return !s.submitted; }));
+  }
+  function resumeActiveQuiz() {
+    var aq = state.activeQuiz;
+    if (!aq) return;
+    navigate("quiz", { quizState: aq.quizState, index: aq.index || 0, isMock: aq.isMock, kind: aq.kind });
+  }
+  function resumeCardHtml() {
+    if (!activeQuizResumable()) return "";
+    var aq = state.activeQuiz;
+    var done = aq.quizState.filter(function (s) { return s.submitted; }).length;
+    var kindName = aq.kind === "wrong" ? "错题测试" : (aq.kind === "mock" ? "模拟考试" : "自定义测试");
+    return '<div class="action-card" data-action="resume-quiz" style="border:1.5px solid var(--accent, #f90)">' +
+      '<div class="ic navy" style="font-size:16px">&#9654;</div>' +
+      '<div class="body"><div class="title" style="font-weight:700">继续上次测试</div>' +
+      '<div class="desc">' + kindName + ' · 已答 ' + done + '/' + aq.quizState.length + ' 题，点此接续</div></div>' +
+      '<div class="chev">&#8250;</div></div>';
   }
 
   function markWrong(id) {
@@ -903,6 +936,8 @@
 
     elApp.innerHTML = html;
     bindChipGroups(elApp);
+    var _rqz = elApp.querySelector('[data-action="resume-quiz"]');
+    if (_rqz) _rqz.addEventListener("click", resumeActiveQuiz);
 
     if (resume) {
       elApp.querySelector("#btn-resume-study").addEventListener("click", function () {
@@ -1009,6 +1044,11 @@
     var resumeNum = state.quizSeqCursor || 1;
     var html = "";
 
+    // Resume-in-progress card
+    if (activeQuizResumable()) {
+      html += '<div class="section-title">进行中</div>' + resumeCardHtml();
+    }
+
     // 真题模拟考试 banner (like v4)
     html += '<div class="section-title">模拟考试</div>';
     html += '<div class="action-card" data-action="go-mock">' +
@@ -1030,6 +1070,8 @@
 
     elApp.innerHTML = html;
     bindChipGroups(elApp);
+    var _rqz = elApp.querySelector('[data-action="resume-quiz"]');
+    if (_rqz) _rqz.addEventListener("click", resumeActiveQuiz);
 
     var countInput = elApp.querySelector("#quiz-count");
     var scopeGroup = elApp.querySelector('[data-chip-group="quiz-scope"]');
@@ -1053,7 +1095,7 @@
       var others = shuffle(QUESTIONS.filter(function (q) { return isMatchingType(q) || isOrderingType(q); })).slice(0, 2);
       var mockIds = shuffle(singles.concat(multis).concat(others)).map(function (q) { return q.id; });
       var quizState = mockIds.map(function (id) { return { id: id, userAnswer: null, submitted: false }; });
-      navigate("quiz", { quizState: quizState, index: 0, isMock: true });
+      navigate("quiz", { quizState: quizState, index: 0, isMock: true, kind: "mock" });
     });
 
     // Custom quiz button
@@ -1088,7 +1130,7 @@
         saveState();
       }
 
-      navigate("quiz", { quizState: quizState, index: 0 });
+      navigate("quiz", { quizState: quizState, index: 0, kind: "custom" });
     });
   }
   // ---- Quiz ----
@@ -1098,6 +1140,9 @@
     var qs = quizState[index];
     var q = questionById(qs.id);
     var total = quizState.length;
+
+    // Auto-save progress for resume-after-exit (not while reviewing a finished quiz)
+    if (!opts.review) persistActiveQuiz(quizState, index, opts.isMock, opts.kind);
 
     // Calculate real-time stats
     var submittedCount = 0, correctCount = 0;
@@ -1192,20 +1237,20 @@
       qs.submitted = true;
       var correct = isAnswerCorrect(q, qs.userAnswer);
       if (correct) markCorrect(q.id); else markWrong(q.id);
-      replaceView("quiz", { quizState: quizState, index: index, isMock: opts.isMock });
+      replaceView("quiz", { quizState: quizState, index: index, isMock: opts.isMock, kind: opts.kind, review: opts.review });
     });
 
     // Nav
     elApp.querySelector("#btn-prev").addEventListener("click", function () {
-      if (index > 0) replaceView("quiz", { quizState: quizState, index: index - 1, isMock: opts.isMock });
+      if (index > 0) replaceView("quiz", { quizState: quizState, index: index - 1, isMock: opts.isMock, kind: opts.kind, review: opts.review });
     });
     var nextBtn = elApp.querySelector("#btn-next");
     if (nextBtn) nextBtn.addEventListener("click", function () {
-      if (index < total - 1) replaceView("quiz", { quizState: quizState, index: index + 1, isMock: opts.isMock });
+      if (index < total - 1) replaceView("quiz", { quizState: quizState, index: index + 1, isMock: opts.isMock, kind: opts.kind, review: opts.review });
     });
     var finishBtn = elApp.querySelector("#btn-finish");
     if (finishBtn) finishBtn.addEventListener("click", function () {
-      replaceView("quiz-result", { quizState: quizState, isMock: opts.isMock });
+      replaceView("quiz-result", { quizState: quizState, isMock: opts.isMock, kind: opts.kind, review: opts.review });
     });
 
     // Jump
@@ -1216,7 +1261,7 @@
           if (quizState[i].id === num) { newIndex = i; break; }
         }
         if (newIndex === -1) { toast("当前测试中没有 Q" + num); return; }
-        replaceView("quiz", { quizState: quizState, index: newIndex, isMock: opts.isMock });
+        replaceView("quiz", { quizState: quizState, index: newIndex, isMock: opts.isMock, kind: opts.kind, review: opts.review });
       });
     });
   }
@@ -1224,6 +1269,7 @@
   function renderQuizResult(opts) {
     var quizState = opts.quizState;
     var total = quizState.length;
+    clearActiveQuiz();
     var correctCount = 0;
     quizState.forEach(function (qs) {
       var q = questionById(qs.id);
@@ -1260,7 +1306,7 @@
     elApp.querySelectorAll(".quiz-result-item").forEach(function (item) {
       item.addEventListener("click", function () {
         var idx = parseInt(item.dataset.idx, 10);
-        navigate("quiz", { quizState: quizState, index: idx });
+        navigate("quiz", { quizState: quizState, index: idx, review: true });
       });
     });
     elApp.querySelector("#btn-back-home").addEventListener("click", goHome);
@@ -1273,6 +1319,10 @@
   function renderWrongbook() {
     var wrongIds = state.wrongIds.slice();
     var html = "";
+    // Resume in-progress wrong-book test
+    if (activeQuizResumable() && state.activeQuiz.kind === "wrong") {
+      html += resumeCardHtml();
+    }
     if (wrongIds.length === 0) {
       html += '<div class="q-card" style="text-align:center;padding:32px">' +
         '<div style="font-size:48px;margin-bottom:12px">🎉</div>' +
@@ -1304,6 +1354,9 @@
 
     elApp.innerHTML = html;
 
+    var _rqw = elApp.querySelector('[data-action="resume-quiz"]');
+    if (_rqw) _rqw.addEventListener("click", resumeActiveQuiz);
+
     elApp.querySelectorAll(".wrong-item").forEach(function (item) {
       item.addEventListener("click", function () {
         var id = parseInt(item.dataset.id, 10);
@@ -1323,7 +1376,7 @@
       var quizState = ids.map(function (id) {
         return { id: id, userAnswer: null, submitted: false };
       });
-      navigate("quiz", { quizState: quizState, index: 0 });
+      navigate("quiz", { quizState: quizState, index: 0, kind: "wrong" });
     });
     var clearBtn = elApp.querySelector("#btn-clear-wrong");
     if (clearBtn) clearBtn.addEventListener("click", function () {
