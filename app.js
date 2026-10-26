@@ -101,6 +101,20 @@
   }
   function clearActiveQuiz() { state.activeQuiz = null; saveState(); }
 
+  // ---- Data-integrity guard: question missing its answer data ----
+  function questionDataMissing(q) {
+    if (!q) return true;
+    if (isMatchingType(q)) return !(q.pairs && q.pairs.length);
+    if (isOrderingType(q)) return !(q.items && q.items.length);
+    return !(q.options && q.options.zh && q.options.zh.length) || q.correct == null || q.correct === "";
+  }
+  // Mark a (data-missing) question as acknowledged/seen: counts as answered, no wrongbook, no accuracy harm
+  function markSeen(id) {
+    var prev = state.progress[id] || {};
+    state.progress[id] = { attempted: true, correct: true, seen: true, wrongCount: prev.wrongCount || 0 };
+    saveState();
+  }
+
   // ---- Unanswered questions (questions never submitted) ----
   function unansweredIds() {
     return QUESTIONS.filter(function (q) {
@@ -311,6 +325,7 @@
     return arraysEqualInOrder(sa, sb);
   }
   function isAnswerCorrect(q, userAnswer) {
+    if (questionDataMissing(q)) return true;
     if (isMatchingType(q)) {
       var correctOrder = q.pairs.map(function (p) { return p.answer.zh; });
       return arraysEqualInOrder(userAnswer || [], correctOrder);
@@ -407,6 +422,7 @@
   }
 
   function renderMatchingAnswerArea(q, userAnswer, isSubmitted) {
+    if (!q.pairs || !q.pairs.length) return '<div class="explain-text" style="color:var(--text-muted)">（此题选项数据缺失，见下方解析）</div>';
     var choices = matchingAnswerChoices(q);
     var sel = userAnswer || q.pairs.map(function () { return null; });
     var html = '<div class="match-list">';
@@ -448,6 +464,7 @@
   }
 
   function renderOrderingAnswerArea(q, userAnswer, isSubmitted) {
+    if (!q.items || !q.items.length) return '<div class="explain-text" style="color:var(--text-muted)">（此题选项数据缺失，见下方解析）</div>';
     var correctOrder = q.items.map(function (it) { return it.zh; });
     var placed = userAnswer || [];
     var bankItems = correctOrder.filter(function (it) { return placed.indexOf(it) === -1; });
@@ -646,8 +663,11 @@
     html += '<div class="q-stem">' + escapeHtml(q.stem.zh) + '</div>';
 
     // Interactive answer area
+    var _dm = questionDataMissing(q);
     var answerHtml = "";
-    if (isMatchingType(q)) {
+    if (_dm) {
+      answerHtml = '<div class="explain-text" style="color:var(--text-muted);padding:8px 0">&#9888; 此题为配对/排序题，原始选项数据缺失，下方直接给出解析供参考。</div>';
+    } else if (isMatchingType(q)) {
       answerHtml = renderMatchingAnswerArea(q, qs.userAnswer, qs.submitted);
     } else if (isOrderingType(q)) {
       answerHtml = renderOrderingAnswerArea(q, qs.userAnswer, qs.submitted);
@@ -656,7 +676,7 @@
     }
     html += '<div id="answer-area">' + answerHtml + '</div>';
 
-    if (qs.submitted) {
+    if (qs.submitted || _dm) {
       html += '<div class="explain-box"><div class="explain-title">解析</div>';
       html += '<div class="explain-text">' + escapeHtml(q.explanation.zh || "（无）") + '</div>';
       html += '</div>';
@@ -664,7 +684,11 @@
     html += '</div>';
 
     // Submit button (before answer)
-    if (!qs.submitted) {
+    if (_dm) {
+      if (!qs.submitted) html += '<button class="btn-primary" id="btn-ack">我已了解（标记完成）</button>';
+      else html += '<button class="btn-secondary mark-wrong-btn' + (inWrongBook ? " active" : "") + '" id="btn-toggle-wrong">' +
+        (inWrongBook ? "&#10003; 已加入错题本" : "&#9888; 标记为错题") + '</button>';
+    } else if (!qs.submitted) {
       html += '<button class="btn-primary" id="btn-submit"' +
         (!isAnswerComplete(q, qs.userAnswer) ? " disabled" : "") + '>提交答案</button>';
     } else {
@@ -702,9 +726,11 @@
 
     // Initial bind
     var area = elApp.querySelector("#answer-area");
-    if (isMatchingType(q)) bindMatchingEvents(area, q, getAnswer, setAnswer);
-    else if (isOrderingType(q)) bindOrderingEvents(area, q, getAnswer, setAnswer);
-    else bindChoiceEvents(area, q, getAnswer, setAnswer);
+    if (!_dm) {
+      if (isMatchingType(q)) bindMatchingEvents(area, q, getAnswer, setAnswer);
+      else if (isOrderingType(q)) bindOrderingEvents(area, q, getAnswer, setAnswer);
+      else bindChoiceEvents(area, q, getAnswer, setAnswer);
+    }
 
     // Submit
     var submitBtn = elApp.querySelector("#btn-submit");
@@ -712,6 +738,12 @@
       qs.submitted = true;
       var correct = isAnswerCorrect(q, qs.userAnswer);
       if (correct) markCorrect(q.id); else markWrong(q.id);
+      replaceView("seq-study", opts);
+    });
+    var ackBtn = elApp.querySelector("#btn-ack");
+    if (ackBtn) ackBtn.addEventListener("click", function () {
+      qs.submitted = true;
+      markSeen(q.id);
       replaceView("seq-study", opts);
     });
 
@@ -836,8 +868,11 @@
     html += '<div class="q-stem">' + escapeHtml(q.stem.zh) + '</div>';
 
     // Interactive answer area
+    var _dm = questionDataMissing(q);
     var answerHtml = "";
-    if (isMatchingType(q)) {
+    if (_dm) {
+      answerHtml = '<div class="explain-text" style="color:var(--text-muted);padding:8px 0">&#9888; 此题为配对/排序题，原始选项数据缺失，下方直接给出解析供参考。</div>';
+    } else if (isMatchingType(q)) {
       answerHtml = renderMatchingAnswerArea(q, qs.userAnswer, qs.submitted);
     } else if (isOrderingType(q)) {
       answerHtml = renderOrderingAnswerArea(q, qs.userAnswer, qs.submitted);
@@ -846,14 +881,18 @@
     }
     html += '<div id="answer-area">' + answerHtml + '</div>';
 
-    if (qs.submitted) {
+    if (qs.submitted || _dm) {
       html += '<div class="explain-box"><div class="explain-title">解析</div>';
       html += '<div class="explain-text">' + escapeHtml(q.explanation.zh || "（无）") + '</div>';
       html += '</div>';
     }
     html += '</div>';
 
-    if (!qs.submitted) {
+    if (_dm) {
+      if (!qs.submitted) html += '<button class="btn-primary" id="btn-ack">我已了解（标记完成）</button>';
+      else html += '<button class="btn-secondary mark-wrong-btn' + (inWrongBook ? " active" : "") + '" id="btn-toggle-wrong">' +
+        (inWrongBook ? "&#10003; 已加入错题本" : "&#9888; 标记为错题") + '</button>';
+    } else if (!qs.submitted) {
       html += '<button class="btn-primary" id="btn-submit"' +
         (!isAnswerComplete(q, qs.userAnswer) ? " disabled" : "") + '>提交答案</button>';
     } else {
@@ -893,9 +932,11 @@
 
     // Initial bind
     var area = elApp.querySelector("#answer-area");
-    if (isMatchingType(q)) bindMatchingEvents(area, q, getAnswer, setAnswer);
-    else if (isOrderingType(q)) bindOrderingEvents(area, q, getAnswer, setAnswer);
-    else bindChoiceEvents(area, q, getAnswer, setAnswer);
+    if (!_dm) {
+      if (isMatchingType(q)) bindMatchingEvents(area, q, getAnswer, setAnswer);
+      else if (isOrderingType(q)) bindOrderingEvents(area, q, getAnswer, setAnswer);
+      else bindChoiceEvents(area, q, getAnswer, setAnswer);
+    }
 
     // Submit
     var submitBtn = elApp.querySelector("#btn-submit");
@@ -903,6 +944,12 @@
       qs.submitted = true;
       var correct = isAnswerCorrect(q, qs.userAnswer);
       if (correct) markCorrect(q.id); else markWrong(q.id);
+      replaceView("topic-study", opts);
+    });
+    var ackBtn = elApp.querySelector("#btn-ack");
+    if (ackBtn) ackBtn.addEventListener("click", function () {
+      qs.submitted = true;
+      markSeen(q.id);
       replaceView("topic-study", opts);
     });
 
@@ -1199,8 +1246,11 @@
     html += '<div class="q-stem">' + escapeHtml(q.stem.zh) + '</div>';
 
     // Interactive answer area
+    var _dm = questionDataMissing(q);
     var answerHtml = "";
-    if (isMatchingType(q)) {
+    if (_dm) {
+      answerHtml = '<div class="explain-text" style="color:var(--text-muted);padding:8px 0">&#9888; 此题为配对/排序题，原始选项数据缺失，下方直接给出解析供参考。</div>';
+    } else if (isMatchingType(q)) {
       answerHtml = renderMatchingAnswerArea(q, qs.userAnswer, qs.submitted);
     } else if (isOrderingType(q)) {
       answerHtml = renderOrderingAnswerArea(q, qs.userAnswer, qs.submitted);
@@ -1209,7 +1259,7 @@
     }
     html += '<div id="answer-area">' + answerHtml + '</div>';
 
-    if (qs.submitted) {
+    if (qs.submitted || _dm) {
       html += '<div class="explain-box"><div class="explain-title">解析</div>';
       html += '<div class="explain-text">' + escapeHtml(q.explanation.zh || "（无）") + '</div>';
       html += '</div>';
@@ -1217,7 +1267,9 @@
     html += '</div>';
 
     // Submit / nav buttons
-    if (!qs.submitted) {
+    if (_dm) {
+      if (!qs.submitted) html += '<button class="btn-primary" id="btn-ack">我已了解（标记完成）</button>';
+    } else if (!qs.submitted) {
       html += '<button class="btn-primary" id="btn-submit"' +
         (!isAnswerComplete(q, qs.userAnswer) ? " disabled" : "") + '>提交答案</button>';
     }
@@ -1257,9 +1309,11 @@
 
     // Initial bind
     var area = elApp.querySelector("#answer-area");
-    if (isMatchingType(q)) bindMatchingEvents(area, q, getAnswer, setAnswer);
-    else if (isOrderingType(q)) bindOrderingEvents(area, q, getAnswer, setAnswer);
-    else bindChoiceEvents(area, q, getAnswer, setAnswer);
+    if (!_dm) {
+      if (isMatchingType(q)) bindMatchingEvents(area, q, getAnswer, setAnswer);
+      else if (isOrderingType(q)) bindOrderingEvents(area, q, getAnswer, setAnswer);
+      else bindChoiceEvents(area, q, getAnswer, setAnswer);
+    }
 
     // Submit
     var submitBtn = elApp.querySelector("#btn-submit");
@@ -1267,6 +1321,12 @@
       qs.submitted = true;
       var correct = isAnswerCorrect(q, qs.userAnswer);
       if (correct) markCorrect(q.id); else markWrong(q.id);
+      replaceView("quiz", { quizState: quizState, index: index, isMock: opts.isMock, kind: opts.kind, review: opts.review });
+    });
+    var ackBtn = elApp.querySelector("#btn-ack");
+    if (ackBtn) ackBtn.addEventListener("click", function () {
+      qs.submitted = true;
+      markSeen(q.id);
       replaceView("quiz", { quizState: quizState, index: index, isMock: opts.isMock, kind: opts.kind, review: opts.review });
     });
 
