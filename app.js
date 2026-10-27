@@ -74,13 +74,21 @@
       quizSeqCursor: 1,
       seqProgress: { index: 0 },
       topicProgress: {},
-      activeQuiz: null
+      activeQuiz: null,
+      activeQuizzes: {}
     };
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return defaults;
       var parsed = JSON.parse(raw);
-      return Object.assign(defaults, parsed);
+      var st = Object.assign(defaults, parsed);
+      if (!st.activeQuizzes || typeof st.activeQuizzes !== "object") st.activeQuizzes = {};
+      if (st.activeQuiz && st.activeQuiz.quizState) {
+        var lk = st.activeQuiz.kind || (st.activeQuiz.isMock ? "mock" : "custom");
+        if (!st.activeQuizzes[lk]) st.activeQuizzes[lk] = st.activeQuiz;
+      }
+      st.activeQuiz = null;
+      return st;
     } catch (e) {
       return defaults;
     }
@@ -92,14 +100,16 @@
 
   // ---- Active quiz persistence (resume-after-exit) ----
   function persistActiveQuiz(quizState, index, isMock, kind) {
-    state.activeQuiz = {
-      quizState: quizState, index: index,
-      isMock: !!isMock, kind: kind || (isMock ? "mock" : "custom"),
-      savedAt: Date.now()
-    };
+    var k = kind || (isMock ? "mock" : "custom");
+    if (!state.activeQuizzes) state.activeQuizzes = {};
+    state.activeQuizzes[k] = { quizState: quizState, index: index, isMock: !!isMock, kind: k, savedAt: Date.now() };
     saveState();
   }
-  function clearActiveQuiz() { state.activeQuiz = null; saveState(); }
+  function clearActiveQuiz(kind, isMock) {
+    var k = kind || (isMock ? "mock" : "custom");
+    if (state.activeQuizzes) delete state.activeQuizzes[k];
+    saveState();
+  }
 
   // ---- Data-integrity guard: question missing its answer data ----
   function questionDataMissing(q) {
@@ -122,26 +132,47 @@
       return !(p && p.attempted);
     }).map(function (q) { return q.id; });
   }
-  function activeQuizResumable() {
-    var aq = state.activeQuiz;
+  var QUIZ_KIND_NAMES = { custom: "自定义测试", mock: "模拟考试", wrong: "错题测试", unanswered: "未答题练习" };
+  function quizResumable(aq) {
     return !!(aq && aq.quizState && aq.quizState.length &&
       aq.quizState.some(function (s) { return !s.submitted; }));
   }
-  function resumeActiveQuiz() {
-    var aq = state.activeQuiz;
-    if (!aq) return;
-    navigate("quiz", { quizState: aq.quizState, index: aq.index || 0, isMock: aq.isMock, kind: aq.kind });
+  function activeQuizResumable(kind) {
+    var all = state.activeQuizzes || {};
+    if (kind) return quizResumable(all[kind]);
+    return Object.keys(all).some(function (k) { return quizResumable(all[k]); });
   }
-  function resumeCardHtml() {
-    if (!activeQuizResumable()) return "";
-    var aq = state.activeQuiz;
+  function resumeActiveQuiz(kind) {
+    var aq = (state.activeQuizzes || {})[kind];
+    if (!aq) return;
+    navigate("quiz", { quizState: aq.quizState, index: aq.index || 0, isMock: aq.isMock, kind: kind });
+  }
+  function resumeCardHtml(onlyKind) {
+    var all = state.activeQuizzes || {};
+    var html = "";
+    Object.keys(QUIZ_KIND_NAMES).forEach(function (k) {
+      if (onlyKind && k !== onlyKind) return;
+      var aq = all[k];
+      if (!quizResumable(aq)) return;
+      var done = aq.quizState.filter(function (s) { return s.submitted; }).length;
+      html += '<div class="action-card" data-action="resume-quiz" data-kind="' + k + '" style="border:1.5px solid var(--accent, #f90)">' +
+        '<div class="ic navy" style="font-size:16px">&#9654;</div>' +
+        '<div class="body"><div class="title" style="font-weight:700">继续上次' + QUIZ_KIND_NAMES[k] + '</div>' +
+        '<div class="desc">已答 ' + done + '/' + aq.quizState.length + ' 题，点此接续</div></div>' +
+        '<div class="chev">&#8250;</div></div>';
+    });
+    return html;
+  }
+  function bindResumeCards(root) {
+    root.querySelectorAll('[data-action="resume-quiz"]').forEach(function (el) {
+      el.addEventListener("click", function () { resumeActiveQuiz(el.dataset.kind); });
+    });
+  }
+  function confirmStartQuiz(kind) {
+    var aq = (state.activeQuizzes || {})[kind];
+    if (!quizResumable(aq)) return true;
     var done = aq.quizState.filter(function (s) { return s.submitted; }).length;
-    var kindName = aq.kind === "wrong" ? "错题测试" : (aq.kind === "mock" ? "模拟考试" : (aq.kind === "unanswered" ? "未答题练习" : "自定义测试"));
-    return '<div class="action-card" data-action="resume-quiz" style="border:1.5px solid var(--accent, #f90)">' +
-      '<div class="ic navy" style="font-size:16px">&#9654;</div>' +
-      '<div class="body"><div class="title" style="font-weight:700">继续上次测试</div>' +
-      '<div class="desc">' + kindName + ' · 已答 ' + done + '/' + aq.quizState.length + ' 题，点此接续</div></div>' +
-      '<div class="chev">&#8250;</div></div>';
+    return confirm("你有一个未完成的" + QUIZ_KIND_NAMES[kind] + "（已答 " + done + "/" + aq.quizState.length + "）。开始新的会覆盖它，确定吗？");
   }
 
   function markWrong(id) {
@@ -991,8 +1022,7 @@
 
     elApp.innerHTML = html;
     bindChipGroups(elApp);
-    var _rqz = elApp.querySelector('[data-action="resume-quiz"]');
-    if (_rqz) _rqz.addEventListener("click", resumeActiveQuiz);
+    bindResumeCards(elApp);
 
     if (resume) {
       elApp.querySelector("#btn-resume-study").addEventListener("click", function () {
@@ -1136,8 +1166,7 @@
 
     elApp.innerHTML = html;
     bindChipGroups(elApp);
-    var _rqz = elApp.querySelector('[data-action="resume-quiz"]');
-    if (_rqz) _rqz.addEventListener("click", resumeActiveQuiz);
+    bindResumeCards(elApp);
 
     var countInput = elApp.querySelector("#quiz-count");
     var scopeGroup = elApp.querySelector('[data-chip-group="quiz-scope"]');
@@ -1156,6 +1185,7 @@
     // 未答题练习 button
     var _unansBtn = elApp.querySelector('[data-action="go-unanswered"]');
     if (_unansBtn) _unansBtn.addEventListener("click", function () {
+      if (!confirmStartQuiz("unanswered")) return;
       var ids = unansweredIds();
       if (ids.length === 0) { toast("已全部作答，没有未答题"); return; }
       var quizState = ids.map(function (id) {
@@ -1166,6 +1196,7 @@
 
     // Mock exam button
     elApp.querySelector('[data-action="go-mock"]').addEventListener("click", function () {
+      if (!confirmStartQuiz("mock")) return;
       // Pick 58 single + 5 multiple + 2 other (matching/ordering/hotspot)
       var singles = shuffle(QUESTIONS.filter(function (q) { return isChoiceType(q) && q.correct.length <= 1; })).slice(0, 58);
       var multis = shuffle(QUESTIONS.filter(function (q) { return isChoiceType(q) && q.correct.length > 1; })).slice(0, 5);
@@ -1177,6 +1208,7 @@
 
     // Custom quiz button
     elApp.querySelector("#btn-start-quiz").addEventListener("click", function () {
+      if (!confirmStartQuiz("custom")) return;
       var scope = getChipValue(elApp, "quiz-scope");
       var order = getChipValue(elApp, "quiz-order");
       var ids = QUESTIONS.map(function (q) { return q.id; });
@@ -1359,7 +1391,7 @@
   function renderQuizResult(opts) {
     var quizState = opts.quizState;
     var total = quizState.length;
-    clearActiveQuiz();
+    if (!opts.review) clearActiveQuiz(opts.kind, opts.isMock);
     var correctCount = 0;
     quizState.forEach(function (qs) {
       var q = questionById(qs.id);
@@ -1410,8 +1442,8 @@
     var wrongIds = state.wrongIds.slice();
     var html = "";
     // Resume in-progress wrong-book test
-    if (activeQuizResumable() && state.activeQuiz.kind === "wrong") {
-      html += resumeCardHtml();
+    if (activeQuizResumable("wrong")) {
+      html += resumeCardHtml("wrong");
     }
     if (wrongIds.length === 0) {
       html += '<div class="q-card" style="text-align:center;padding:32px">' +
@@ -1444,8 +1476,7 @@
 
     elApp.innerHTML = html;
 
-    var _rqw = elApp.querySelector('[data-action="resume-quiz"]');
-    if (_rqw) _rqw.addEventListener("click", resumeActiveQuiz);
+    bindResumeCards(elApp);
 
     elApp.querySelectorAll(".wrong-item").forEach(function (item) {
       item.addEventListener("click", function () {
@@ -1461,6 +1492,7 @@
     });
     var testBtn = elApp.querySelector("#btn-test-wrong");
     if (testBtn) testBtn.addEventListener("click", function () {
+      if (!confirmStartQuiz("wrong")) return;
       // Start a quiz with wrong book questions
       var ids = shuffle(wrongIds);
       var quizState = ids.map(function (id) {
@@ -1620,16 +1652,24 @@
           if (imported.fontIndex != null) state.fontIndex = imported.fontIndex;
           if (imported.quizSeqCursor != null) state.quizSeqCursor = imported.quizSeqCursor;
           // Restore in-progress quiz (resume-after-exit) across devices
-          if (imported.activeQuiz && imported.activeQuiz.quizState && imported.activeQuiz.quizState.length) {
-            var _valid = imported.activeQuiz.quizState.filter(function (s) { return questionById(s.id); });
-            if (_valid.length) {
-              imported.activeQuiz.quizState = _valid;
-              imported.activeQuiz.index = Math.min(imported.activeQuiz.index || 0, _valid.length - 1);
-              state.activeQuiz = imported.activeQuiz;
-            }
-          } else {
-            state.activeQuiz = null;
+          var _incoming = {};
+          if (imported.activeQuizzes && typeof imported.activeQuizzes === "object") {
+            Object.keys(imported.activeQuizzes).forEach(function (k) { _incoming[k] = imported.activeQuizzes[k]; });
           }
+          if (imported.activeQuiz && imported.activeQuiz.quizState) {
+            var _lk = imported.activeQuiz.kind || (imported.activeQuiz.isMock ? "mock" : "custom");
+            if (!_incoming[_lk]) _incoming[_lk] = imported.activeQuiz;
+          }
+          if (!state.activeQuizzes) state.activeQuizzes = {};
+          Object.keys(_incoming).forEach(function (k) {
+            var aq = _incoming[k];
+            if (!aq || !aq.quizState || !aq.quizState.length) return;
+            var _valid = aq.quizState.filter(function (s) { return questionById(s.id); });
+            if (!_valid.length) return;
+            aq.quizState = _valid; aq.kind = k;
+            aq.index = Math.min(aq.index || 0, _valid.length - 1);
+            state.activeQuizzes[k] = aq;
+          });
           saveState();
           var _resumeMsg = activeQuizResumable() ? "，含未完成测试可继续" : "";
           toast("已导入学习进度（" + Object.keys(state.progress).length + " 条记录" + _resumeMsg + "）");
