@@ -1348,6 +1348,11 @@
 
     html += '<div class="q-card">';
     html += '<span class="q-num-badge">Q' + displayQNum(q) + '</span>';
+    if (opts.kind === "mockwrong" && state.mockLast) {
+      var _ml = state.mockLast;
+      if ((_ml.wrongIds || []).indexOf(q.id) !== -1) html += '<span class="q-multi-badge" style="background:var(--red-bg);color:var(--red)">上次答错</span>';
+      else if ((_ml.flaggedIds || []).indexOf(q.id) !== -1) html += '<span class="q-multi-badge" style="background:#fffbeb;color:#b45309">&#9733; 上次答对 · 待复查</span>';
+    }
     html += questionTypeBadge(q);
     html += '<div class="q-stem">' + escapeHtml(q.stem.zh) + '</div>';
 
@@ -1587,7 +1592,7 @@
     var aq = state.activeQuizzes && state.activeQuizzes.mock;
     var limit = (aq && aq.timeLimitMs) || MOCK_LIMIT_MS;
     var used = Math.min((aq && aq.elapsedMs) || 0, limit);
-    var correct = 0, unanswered = 0, wrongIds = [];
+    var correct = 0, unanswered = 0, wrongIds = [], flaggedIds = [];
     quizState.forEach(function (s) {
       var q = questionById(s.id); if (!q) return;
       var isFilled = !!isAnswerComplete(q, s.userAnswer);
@@ -1596,10 +1601,12 @@
       if (isFilled && !s.submitted) { if (ok) markCorrect(q.id); else markWrong(q.id); }
       s.submitted = true;
       if (ok) correct++; else wrongIds.push(s.id);
+      if (s.flagged) flaggedIds.push(s.id);
     });
+    var reviewIds = wrongIds.concat(flaggedIds.filter(function (id) { return wrongIds.indexOf(id) === -1; }));
     var total = quizState.length;
     var pct = total ? Math.round(correct / total * 100) : 0;
-    var summary = { finishedAt: Date.now(), total: total, correct: correct, pct: pct, passed: pct >= 70, usedMs: used, unanswered: unanswered, wrongIds: wrongIds };
+    var summary = { finishedAt: Date.now(), total: total, correct: correct, pct: pct, passed: pct >= 70, usedMs: used, unanswered: unanswered, wrongIds: wrongIds, flaggedIds: flaggedIds, reviewIds: reviewIds };
     state.mockLast = summary;
     state.mockHistory = (state.mockHistory || []).concat([{ finishedAt: summary.finishedAt, total: total, correct: correct, pct: pct, passed: summary.passed, usedMs: used }]).slice(-30);
     if (state.activeQuizzes) { delete state.activeQuizzes.mock; delete state.activeQuizzes.mockwrong; }
@@ -1621,6 +1628,16 @@
     return h + '</div>';
   }
 
+  function mockReviewIds(ml) {
+    if (!ml) return [];
+    return (ml.reviewIds || ml.wrongIds || []).filter(function (id) { return questionById(id); });
+  }
+  function mockFlagOnlyCount(ml) {
+    if (!ml || !ml.flaggedIds) return 0;
+    var w = ml.wrongIds || [];
+    return ml.flaggedIds.filter(function (id) { return w.indexOf(id) === -1; }).length;
+  }
+
   function mockWrongCardHtml() {
     var ml = state.mockLast;
     if (!ml) {
@@ -1629,11 +1646,12 @@
         '<div class="body"><div class="title" style="font-weight:700">真题错题测试</div>' +
         '<div class="desc">完成一次真题模拟考试后，这里会列出上次考试答错的题</div></div></div>';
     }
-    var n = (ml.wrongIds || []).length;
+    var n = mockReviewIds(ml).length;
+    var nWrong = (ml.wrongIds || []).length, nFlag = mockFlagOnlyCount(ml);
     var d = new Date(ml.finishedAt);
     var when = (d.getMonth() + 1) + "/" + d.getDate() + " " + d.getHours() + ":" + (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
     var desc = '上次真题考试 ' + when + ' · ' + ml.correct + '/' + ml.total + ' ' + (ml.passed ? '通过' : '未通过') +
-      (n ? ' · 错 ' + n + ' 道 · 逐题提交看解析' : ' · 全对，没有错题');
+      (n ? ' · 错 ' + nWrong + ' 道' + (nFlag ? ' + 待复查 ' + nFlag + ' 道' : '') + ' · 逐题提交看解析' : ' · 全对且无待复查，没有题目');
     return '<div class="action-card"' + (n ? ' data-action="go-mockwrong"' : ' style="opacity:0.6"') + '>' +
       '<div class="ic red" style="font-size:16px">&#128221;</div>' +
       '<div class="body"><div class="title" style="font-weight:700">真题错题测试</div>' +
@@ -1642,8 +1660,8 @@
 
   function startMockWrong() {
     var ml = state.mockLast;
-    var ids = ((ml && ml.wrongIds) || []).filter(function (id) { return questionById(id); });
-    if (!ids.length) { toast("上次真题考试没有错题"); return; }
+    var ids = mockReviewIds(ml);
+    if (!ids.length) { toast("上次真题考试没有错题或待复查题"); return; }
     if (!confirmStartQuiz("mockwrong")) return;
     var quizState = ids.map(function (id) { return { id: id, userAnswer: null, submitted: false }; });
     navigate("quiz", { quizState: quizState, index: 0, kind: "mockwrong" });
@@ -1688,14 +1706,15 @@
       html += '<div class="action-card quiz-result-item" data-idx="' + i + '">' +
         '<div class="ic ' + (correct ? "green" : "red") + '" style="width:32px;height:32px;font-size:14px;border-radius:8px;background:' +
         (correct ? 'var(--green)' : 'var(--red)') + '">' + (correct ? '✓' : '✗') + '</div>' +
-        '<div class="body"><div class="title">Q' + displayQNum(q) + '</div>' +
+        '<div class="body"><div class="title">Q' + displayQNum(q) + (qs.flagged ? ' <span class="mock-star">&#9733; 待复查</span>' : '') + '</div>' +
         '<div class="desc">' + escapeHtml(q.stem.zh.substring(0, 40)) + '...</div></div>' +
         '<div class="chev">&#8250;</div></div>';
     });
 
     if (opts.kind === "mock") {
-      var _wn = quizState.filter(function (s) { return !isAnswerCorrect(questionById(s.id), s.userAnswer); }).length;
-      if (_wn) html += '<button class="btn-primary" id="btn-start-mockwrong" style="margin-top:16px">进入真题错题测试（' + _wn + ' 道）</button>';
+      var _sm = opts.mockSummary || state.mockLast;
+      var _wn = mockReviewIds(_sm).length, _fn = mockFlagOnlyCount(_sm);
+      if (_wn) html += '<button class="btn-primary" id="btn-start-mockwrong" style="margin-top:16px">进入真题错题测试（' + _wn + ' 道' + (_fn ? '，含待复查 ' + _fn + ' 道' : '') + '）</button>';
     }
     html += '<button class="btn-primary" id="btn-back-home" style="margin-top:16px">返回首页</button>';
     html += '<button class="btn-secondary" id="btn-retry">重新测试</button>';
