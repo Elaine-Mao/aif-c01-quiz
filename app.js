@@ -130,6 +130,26 @@
     return s;
   }
 
+  function migrateHotTextV3(s) {
+    if (!s || s.hotTextV3) return s;
+    var M = (window.HOT_TEXT_MAP_V3 || {}), L = (window.HOT_LEN_V3 || {});
+    function fix(aq) {
+      if (!aq || !aq.quizState) return;
+      aq.quizState.forEach(function (st) {
+        var m = M[String(st.id)];
+        if (!m || !st.userAnswer) return;
+        if (!st.submitted) { st.userAnswer = null; return; }
+        var out = st.userAnswer.map(function (t) { return t == null ? null : (m[t] !== undefined ? m[t] : undefined); });
+        var ok = out.length === L[String(st.id)] && out.every(function (t) { return t !== undefined && t !== null; });
+        if (ok) st.userAnswer = out; else { st.userAnswer = null; st.submitted = false; }
+      });
+    }
+    if (s.activeQuizzes) Object.keys(s.activeQuizzes).forEach(function (k) { fix(s.activeQuizzes[k]); });
+    if (s.activeQuiz) fix(s.activeQuiz);
+    s.hotTextV3 = true;
+    return s;
+  }
+
   function loadState() {
     var defaults = {
       fontIndex: DEFAULT_FONT_INDEX,
@@ -144,7 +164,7 @@
     };
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) { defaults.bankVersion = 2; return defaults; }
+      if (!raw) { defaults.bankVersion = 2; defaults.customExtendedV2 = true; defaults.hotTextV3 = true; return defaults; }
       var parsed = JSON.parse(raw);
       var _needMig = parsed.bankVersion !== 2;
       var st = Object.assign(defaults, parsed);
@@ -159,10 +179,9 @@
         migrateBankV2(st);
       }
       st.bankVersion = 2;
-      if (!st.customExtendedV2) {
-        extendCustomToFullBank(st);
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(st)); } catch (e3) {}
-      }
+      if (!st.customExtendedV2) extendCustomToFullBank(st);
+      if (!st.hotTextV3) migrateHotTextV3(st);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(st)); } catch (e3) {}
       return st;
     } catch (e) {
       return defaults;
@@ -411,14 +430,14 @@
   function isOrderingType(q) { return q.qtype === "ordering"; }
   function isChoiceType(q) { return !q.qtype || q.qtype === "single" || q.qtype === "multiple"; }
   function matchingAnswerChoices(q) {
-    if (q.choices && q.choices.length) return shuffle(q.choices.map(function (c) { return { zh: c.zh }; }));
+    if (q.choices && q.choices.length) return q.choices.map(function (c) { return { zh: c.zh }; });
     var seen = {};
     var arr = [];
     q.pairs.forEach(function (p) {
       var key = p.answer.zh;
       if (!seen[key]) { seen[key] = true; arr.push({ zh: key }); }
     });
-    return shuffle(arr);
+    return arr.sort(function (a, b) { return a.zh.localeCompare(b.zh); });
   }
   function arraysEqualInOrder(a, b) {
     if (a.length !== b.length) return false;
@@ -454,7 +473,7 @@
       return userAnswer && userAnswer.length === q.pairs.length && userAnswer.every(function (a) { return a !== null; });
     }
     if (isOrderingType(q)) {
-      return userAnswer && userAnswer.length === q.items.length;
+      return userAnswer && userAnswer.length === q.items.length && userAnswer.every(function (a) { return a !== null && a !== undefined; });
     }
     return userAnswer && userAnswer.length > 0;
   }
@@ -532,39 +551,36 @@
     if (!q.pairs || !q.pairs.length) return '<div class="explain-text" style="color:var(--text-muted)">（此题选项数据缺失，见下方解析）</div>';
     var choices = matchingAnswerChoices(q);
     var sel = userAnswer || q.pairs.map(function () { return null; });
-    var html = '<div class="match-list">';
+    var html = '<div class="hs-list">';
     q.pairs.forEach(function (p, i) {
-      var picked = sel[i];
-      html += '<div class="match-qrow"><div class="match-statement">' + escapeHtml(p.statement.zh) + '</div>';
-      html += '<div class="match-choice-list">';
-      choices.forEach(function (choice) {
-        var isPicked = picked === choice.zh;
-        var classes = ["match-choice"];
-        if (!isSubmitted) { if (isPicked) classes.push("selected"); }
-        else {
-          var isCorrectChoice = choice.zh === p.answer.zh;
-          if (isCorrectChoice) classes.push("correct");
-          else if (isPicked) classes.push("incorrect");
-        }
-        html += '<button class="' + classes.join(" ") + '"' + (isSubmitted ? " disabled" : "") +
-          ' data-row="' + i + '" data-choice="' + escapeHtml(choice.zh) + '">' + escapeHtml(choice.zh) + '</button>';
-      });
-      html += '</div>';
-      if (isSubmitted && picked !== p.answer.zh) {
-        html += '<div class="match-correct-hint">正确答案: ' + escapeHtml(p.answer.zh) + '</div>';
-      }
-      html += '</div>';
+      html += hsRow(p.statement.zh, i, choices.map(function (c) { return c.zh; }), sel[i], p.answer.zh, isSubmitted);
     });
     return html + '</div>';
   }
 
+  // Shared dropdown row for HOTSPOT questions (matching + ordering)
+  function hsRow(label, i, choices, picked, correct, isSubmitted) {
+    var cls = "hs-select";
+    if (isSubmitted) cls += (picked === correct) ? " correct" : " incorrect";
+    else if (picked) cls += " filled";
+    var html = '<div class="hs-row">';
+    if (label) html += '<div class="hs-label">' + escapeHtml(label) + '</div>';
+    html += '<select class="' + cls + '" data-row="' + i + '"' + (isSubmitted ? " disabled" : "") + '>' +
+      '<option value=""' + (picked ? "" : " selected") + '>Select…</option>';
+    choices.forEach(function (c) {
+      html += '<option value="' + escapeHtml(c) + '"' + (picked === c ? " selected" : "") + '>' + escapeHtml(c) + '</option>';
+    });
+    html += '</select>';
+    if (isSubmitted && picked !== correct) html += '<div class="match-correct-hint">正确答案: ' + escapeHtml(correct) + '</div>';
+    return html + '</div>';
+  }
+
   function bindMatchingEvents(container, q, getAnswer, setAnswer) {
-    container.querySelectorAll(".match-choice").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var row = parseInt(btn.dataset.row, 10);
-        var choice = btn.dataset.choice;
-        var cur = getAnswer() || q.pairs.map(function () { return null; });
-        cur[row] = (cur[row] === choice) ? null : choice;
+    container.querySelectorAll("select.hs-select").forEach(function (el) {
+      el.addEventListener("change", function () {
+        var row = parseInt(el.dataset.row, 10);
+        var cur = (getAnswer() || q.pairs.map(function () { return null; })).slice();
+        cur[row] = el.value || null;
         setAnswer(cur);
       });
     });
@@ -573,53 +589,24 @@
   function renderOrderingAnswerArea(q, userAnswer, isSubmitted) {
     if (!q.items || !q.items.length) return '<div class="explain-text" style="color:var(--text-muted)">（此题选项数据缺失，见下方解析）</div>';
     var correctOrder = q.items.map(function (it) { return it.zh; });
-    var placed = userAnswer || [];
-    var bankItems = correctOrder.filter(function (it) { return placed.indexOf(it) === -1; });
-    bankItems = shuffle(bankItems);
-    var html = '<div class="order-progress-list">';
-    if (placed.length === 0) {
-      html += '<div class="order-placeholder">点击下方选项，按正确顺序添加</div>';
-    }
-    placed.forEach(function (it, i) {
-      var classes = ["order-row", "selected"];
-      if (isSubmitted) { classes.push(it === correctOrder[i] ? "correct" : "incorrect"); }
-      html += '<div class="' + classes.join(" ") + '" data-placed="' + i + '">' +
-        '<div class="order-num">' + (i+1) + '</div>' +
-        '<div class="order-text">' + escapeHtml(it) + '</div>' +
-        (!isSubmitted ? '<div class="order-remove">&#10005;</div>' : '') + '</div>';
+    var choices = (q.choices && q.choices.length) ? q.choices.map(function (c) { return c.zh; }) : correctOrder.slice().sort(function (a, b) { return a.localeCompare(b); });
+    var sel = userAnswer || correctOrder.map(function () { return null; });
+    var labels = q.stepLabels || [];
+    var html = '<div class="hs-list">';
+    correctOrder.forEach(function (it, i) {
+      var lab = labels[i] != null ? labels[i] : ("Step " + (i + 1) + ":");
+      html += hsRow(lab, i, choices, sel[i] || null, it, isSubmitted);
     });
-    html += '</div>';
-    if (isSubmitted) {
-      html += '<div class="order-correct-hint"><div class="explain-title">正确顺序</div>';
-      correctOrder.forEach(function (it, i) {
-        html += '<div class="order-row correct"><div class="order-num">' + (i+1) + '</div><div class="order-text">' + escapeHtml(it) + '</div></div>';
-      });
-      html += '</div>';
-    }
-    if (!isSubmitted && bankItems.length > 0) {
-      html += '<div class="order-bank">';
-      bankItems.forEach(function (it) {
-        html += '<button class="order-bank-item" data-item="' + escapeHtml(it) + '">' + escapeHtml(it) + '</button>';
-      });
-      html += '</div>';
-    }
-    return html;
+    return html + '</div>';
   }
 
   function bindOrderingEvents(container, q, getAnswer, setAnswer) {
-    container.querySelectorAll(".order-bank-item").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var cur = getAnswer() || [];
-        cur.push(btn.dataset.item);
-        setAnswer(cur);
-      });
-    });
-    container.querySelectorAll(".order-remove").forEach(function (btn) {
-      btn.addEventListener("click", function (e) {
-        e.stopPropagation();
-        var idx = parseInt(btn.parentElement.dataset.placed, 10);
-        var cur = getAnswer() || [];
-        cur.splice(idx, 1);
+    container.querySelectorAll("select.hs-select").forEach(function (el) {
+      el.addEventListener("change", function () {
+        var row = parseInt(el.dataset.row, 10);
+        var cur = (getAnswer() || q.items.map(function () { return null; })).slice();
+        while (cur.length < q.items.length) cur.push(null);
+        cur[row] = el.value || null;
         setAnswer(cur);
       });
     });
@@ -1721,6 +1708,7 @@
           var imported = data.state || data;
           if (imported.bankVersion !== 2) migrateBankV2(imported);
           if (!imported.customExtendedV2) extendCustomToFullBank(imported);
+          if (!imported.hotTextV3) migrateHotTextV3(imported);
           // Merge imported state
           if (imported.wrongIds) state.wrongIds = imported.wrongIds;
           if (imported.progress) state.progress = imported.progress;
