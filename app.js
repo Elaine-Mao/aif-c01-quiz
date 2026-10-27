@@ -1618,8 +1618,21 @@
           if (imported.topicProgress) state.topicProgress = imported.topicProgress;
           if (imported.studyProgress) state.studyProgress = imported.studyProgress;
           if (imported.fontIndex != null) state.fontIndex = imported.fontIndex;
+          if (imported.quizSeqCursor != null) state.quizSeqCursor = imported.quizSeqCursor;
+          // Restore in-progress quiz (resume-after-exit) across devices
+          if (imported.activeQuiz && imported.activeQuiz.quizState && imported.activeQuiz.quizState.length) {
+            var _valid = imported.activeQuiz.quizState.filter(function (s) { return questionById(s.id); });
+            if (_valid.length) {
+              imported.activeQuiz.quizState = _valid;
+              imported.activeQuiz.index = Math.min(imported.activeQuiz.index || 0, _valid.length - 1);
+              state.activeQuiz = imported.activeQuiz;
+            }
+          } else {
+            state.activeQuiz = null;
+          }
           saveState();
-          toast("已导入学习进度（" + Object.keys(state.progress).length + " 条记录）");
+          var _resumeMsg = activeQuizResumable() ? "，含未完成测试可继续" : "";
+          toast("已导入学习进度（" + Object.keys(state.progress).length + " 条记录" + _resumeMsg + "）");
           goHome();
         } catch (e) {
           toast("导入失败：文件格式不正确");
