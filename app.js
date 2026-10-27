@@ -65,6 +65,71 @@
   // ---------- Persistent state ----------
   var state = loadState();
 
+  // ---- Question bank v2 migration (504 -> 621, ids re-aligned to the 571-question PDF) ----
+  function migrateBankV2(s) {
+    if (!s || s.bankVersion === 2) return s;
+    var M = window.ID_MIGRATION_V2 || {};
+    var RESET = window.RESET_IDS_V2 || [];
+    function mid(id) { var n = M[String(id)]; return n != null ? n : id; }
+    function isReset(n) { return RESET.indexOf(n) !== -1; }
+    if (s.progress) {
+      var np = {};
+      Object.keys(s.progress).forEach(function (k) {
+        var p = s.progress[k] || {}; var n = mid(parseInt(k, 10));
+        if (isReset(n)) return;
+        var e = np[n];
+        if (!e) np[n] = Object.assign({}, p);
+        else {
+          e.attempted = !!(e.attempted || p.attempted);
+          e.correct = !!(e.correct && p.correct);
+          e.wrongCount = (e.wrongCount || 0) + (p.wrongCount || 0);
+        }
+      });
+      s.progress = np;
+    }
+    if (s.wrongIds) {
+      var seenW = {}, outW = [];
+      s.wrongIds.forEach(function (id) { var n = mid(id); if (isReset(n) || seenW[n]) return; seenW[n] = 1; outW.push(n); });
+      s.wrongIds = outW;
+    }
+    if (s.seqProgress && s.seqProgress.index != null) s.seqProgress.index = Math.max(0, mid(s.seqProgress.index + 1) - 1);
+    if (s.quizSeqCursor && s.quizSeqCursor <= 452) s.quizSeqCursor = mid(s.quizSeqCursor);
+    function mq(aq) {
+      if (!aq || !aq.quizState) return;
+      var seen = {}, out = [], keptBefore = 0, cur = aq.index || 0;
+      aq.quizState.forEach(function (st, i) {
+        var n = mid(st.id);
+        if (seen[n]) return; seen[n] = 1;
+        var e = { id: n, userAnswer: st.userAnswer, submitted: st.submitted };
+        if (isReset(n)) { e.userAnswer = null; e.submitted = false; }
+        if (i < cur) keptBefore++;
+        out.push(e);
+      });
+      aq.quizState = out;
+      aq.index = Math.min(keptBefore, Math.max(out.length - 1, 0));
+    }
+    if (s.activeQuizzes) Object.keys(s.activeQuizzes).forEach(function (k) { mq(s.activeQuizzes[k]); });
+    if (s.activeQuiz) mq(s.activeQuiz);
+    s.bankVersion = 2;
+    return s;
+  }
+
+  // One-time: extend the in-progress custom test to cover the whole (new) bank
+  function extendCustomToFullBank(s) {
+    if (!s || s.customExtendedV2) return s;
+    function ext(aq) {
+      if (!aq || !aq.quizState || !aq.quizState.length) return;
+      var have = {};
+      aq.quizState.forEach(function (st) { have[st.id] = 1; });
+      QUESTIONS.map(function (q) { return q.id; }).sort(function (a, b) { return a - b; })
+        .forEach(function (id) { if (!have[id]) aq.quizState.push({ id: id, userAnswer: null, submitted: false }); });
+    }
+    if (s.activeQuizzes && s.activeQuizzes.custom) ext(s.activeQuizzes.custom);
+    if (s.activeQuiz && (s.activeQuiz.kind || (s.activeQuiz.isMock ? "mock" : "custom")) === "custom") ext(s.activeQuiz);
+    s.customExtendedV2 = true;
+    return s;
+  }
+
   function loadState() {
     var defaults = {
       fontIndex: DEFAULT_FONT_INDEX,
@@ -79,8 +144,9 @@
     };
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return defaults;
+      if (!raw) { defaults.bankVersion = 2; return defaults; }
       var parsed = JSON.parse(raw);
+      var _needMig = parsed.bankVersion !== 2;
       var st = Object.assign(defaults, parsed);
       if (!st.activeQuizzes || typeof st.activeQuizzes !== "object") st.activeQuizzes = {};
       if (st.activeQuiz && st.activeQuiz.quizState) {
@@ -88,6 +154,15 @@
         if (!st.activeQuizzes[lk]) st.activeQuizzes[lk] = st.activeQuiz;
       }
       st.activeQuiz = null;
+      if (_needMig) {
+        try { localStorage.setItem(STORAGE_KEY + "_backup_v1", raw); } catch (e2) {}
+        migrateBankV2(st);
+      }
+      st.bankVersion = 2;
+      if (!st.customExtendedV2) {
+        extendCustomToFullBank(st);
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(st)); } catch (e3) {}
+      }
       return st;
     } catch (e) {
       return defaults;
@@ -336,6 +411,7 @@
   function isOrderingType(q) { return q.qtype === "ordering"; }
   function isChoiceType(q) { return !q.qtype || q.qtype === "single" || q.qtype === "multiple"; }
   function matchingAnswerChoices(q) {
+    if (q.choices && q.choices.length) return shuffle(q.choices.map(function (c) { return { zh: c.zh }; }));
     var seen = {};
     var arr = [];
     q.pairs.forEach(function (p) {
@@ -1643,6 +1719,8 @@
         try {
           var data = JSON.parse(reader.result);
           var imported = data.state || data;
+          if (imported.bankVersion !== 2) migrateBankV2(imported);
+          if (!imported.customExtendedV2) extendCustomToFullBank(imported);
           // Merge imported state
           if (imported.wrongIds) state.wrongIds = imported.wrongIds;
           if (imported.progress) state.progress = imported.progress;
